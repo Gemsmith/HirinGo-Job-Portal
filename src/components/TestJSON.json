@@ -1,0 +1,281 @@
+[
+  {
+    "postedBy": {
+      "username": "user",
+      "name": "John Duran"
+    },
+    "_id": "624898871fcf5eb69f2e548b",
+    "title": "JR. Web Developer",
+    "department": "AI, ML",
+    "salaryFrom": 800000,
+    "salaryTo": 1000000,
+    "experience": "6m+",
+    "smallDescription": "quia et suscipit\\nsuscipit recusandae consequuntur expedita et cum\\nreprehenderit molestiae ut ut quas totam\\nnostrum rerum est autem sunt rem eveniet architecto",
+    "fullDescription": "quia et suscipit\\nsuscipit recusandae consequuntur expedita et cum\\nreprehenderit molestiae ut ut quas totam\\nnostrum rerum est autem sunt rem eveniet architectoquia et suscipit\\nsuscipit recusandae consequuntur expedita et cum\\nreprehenderit molestiae ut ut quas totam\\nnostrum rerum est autem sunt rem eveniet architectoquia et suscipit\\nsuscipit recusandae consequuntur expedita et cum\\nreprehenderit molestiae ut ut quas totam\\nnostrum rerum est autem sunt rem eveniet architecto",
+    "location": "Remote",
+    "company_name": "Ellison Lowe LLC",
+    "company_email": "a@a.com",
+    "company_phone": "08109616303",
+    "company_description": "Description descriptionDescription descriptionDescription descriptionDescription descriptionDescription descriptionDescription descriptionDescription description",
+    "skillsRequired": ["MERN", " Lodash"],
+    "minimumQualifications": [
+      {
+        "name": "UG",
+        "score": "7.7"
+      }
+    ],
+    "appliedCandidates": [
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T18:23:24.234Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T20:23:04.133Z"
+      }
+    ],
+    "createdAt": "2022-04-02T18:40:07.326Z",
+    "updatedAt": "2022-04-05T20:23:04.189Z",
+    "__v": 2,
+    "jobPostDate": "25 Mar 2022",
+    "jobUpdateDate": "5 Apr 2022"
+  },
+  {
+    "postedBy": {
+      "username": "newacount",
+      "name": "John Duran"
+    },
+    "_id": "624affd1e2686ec8d666f104",
+    "title": "Sr. MERN Developer",
+    "department": "Aut facilis magnam d",
+    "salaryFrom": 36,
+    "salaryTo": 68,
+    "experience": "1y+",
+    "smallDescription": "Fugit cillum nisi e",
+    "fullDescription": "Sed et nostrum dolor",
+    "location": "Hogwarts",
+    "jobPostDate": "4 Apr 2022",
+    "company_name": "Gentry Justice Co",
+    "company_email": "pelilyjytu@mailinator.com",
+    "company_phone": "Powers Myers Inc",
+    "company_description": "Blanditiis exercitat",
+    "skillsRequired": ["Amet omnis et eum a"],
+    "minimumQualifications": [
+      {
+        "name": "UG",
+        "score": "7"
+      },
+      {
+        "name": "12th",
+        "score": "70 / 7 / B1+"
+      }
+    ],
+    "appliedCandidates": [
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T15:56:07.693Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T16:41:26.985Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T16:41:43.413Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T16:48:35.157Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T17:14:55.392Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T17:16:36.430Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T17:35:48.662Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T17:37:09.665Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T17:37:59.520Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T17:38:23.800Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T17:38:43.444Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T17:40:53.274Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T17:41:10.920Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T17:41:19.442Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T17:41:38.113Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T17:42:47.965Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T17:44:28.644Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T17:45:06.206Z"
+      },
+      {
+        "userId": null,
+        "applyDate": "2022-04-05T17:56:52.158Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T18:19:29.847Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T18:26:53.070Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T18:27:21.271Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T18:30:04.199Z"
+      }
+    ],
+    "createdAt": "2022-04-04T14:25:21.873Z",
+    "updatedAt": "2022-04-05T18:30:04.235Z",
+    "__v": 23,
+    "jobUpdateDate": "5 Apr 2022"
+  },
+  {
+    "postedBy": {
+      "username": "newacount",
+      "name": "John Duran"
+    },
+    "_id": "624c3b5a23bef46026e1635d",
+    "title": "Tech Lead",
+    "department": "IT",
+    "salaryFrom": 1000000,
+    "salaryTo": 1500000,
+    "experience": "6m+",
+    "smallDescription": "Tech Lead Job",
+    "fullDescription": "Tech Lead JobTech Lead JobTech Lead JobTech Lead JobTech Lead Job\nTech Lead JobTech Lead JobTech Lead JobTech Lead JobTech Lead Job\nTech Lead JobTech Lead JobTech Lead JobTech Lead JobTech Lead Job",
+    "location": "Remote",
+    "jobPostDate": "5 Apr 2022",
+    "company_name": "Microsoft",
+    "company_email": "john@microsoft.com",
+    "company_phone": "08109616303",
+    "company_description": "Company Description Company Description Company Description Company Description Company Description Company Description Company Description \nCompany Description Company Description Company Description Company Description Company Description Company Description Company Description \nCompany Description Company Description Company Description Company Description Company Description Company Description Company Description ",
+    "skillsRequired": ["MERN"],
+    "minimumQualifications": [
+      {
+        "name": "UG",
+        "score": "7.5"
+      }
+    ],
+    "appliedCandidates": [
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T14:50:49.521Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T14:52:20.385Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T14:53:41.601Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T15:03:38.753Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T15:44:01.022Z",
+        "Hello": "hello"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T15:53:43.445Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T16:59:38.626Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T17:03:55.450Z"
+      },
+      {
+        "userId": "624c79a65b14d7e97a1a8abc",
+        "applyDate": "2022-04-05T17:20:50.368Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T18:30:49.757Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T18:32:54.458Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T18:33:32.090Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T18:34:13.321Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T18:34:33.210Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T18:35:05.062Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T18:35:30.984Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T18:36:15.346Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T18:36:24.615Z"
+      },
+      {
+        "userId": "624c418e23bef46026e16362",
+        "applyDate": "2022-04-05T18:37:02.090Z"
+      }
+    ],
+    "createdAt": "2022-04-05T12:51:38.640Z",
+    "updatedAt": "2022-04-05T18:37:02.131Z",
+    "__v": 15
+  }
+]

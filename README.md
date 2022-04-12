@@ -1,4 +1,8 @@
-# Getting Started with Create React App
+Skills Display:
+https://codepen.io/milacarrera/pen/pEPoez
+https://us.niemvuilaptrinh.com/article/15-examples-of-html5-progress-bar
+
+Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
