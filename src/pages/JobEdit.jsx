@@ -1,12 +1,14 @@
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { SpinnerLoader } from '../components';
-import DefaultLayout from '../components/DefaultLayout';
-import { editJob, postJob } from '../redux/actions/jobActions';
+import { editJob } from '../redux/actions/jobActions';
+
+import { v4 } from 'uuid';
+import { storage } from '../firebase';
+import { ref, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 
 const JobDetailsFormComponent = ({
   register,
@@ -30,12 +32,13 @@ const JobDetailsFormComponent = ({
     if (fields.length === 0) {
       append({ name: '', score: '' });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <>
       <form onSubmit={handleSubmit(onSaveClick)}>
-        <div className="flex gap-4 p-4 bg-gray-200 flex-col rounded-md ">
+        <div className="flex gap-4 p-4 bg-blue-100 flex-col rounded-md ">
           <div className="flex flex-col md:flex-row gap-4">
             {/* Title */}
             <div className="relative grow ">
@@ -103,9 +106,9 @@ const JobDetailsFormComponent = ({
           </div>
 
           {/* Minimum Qualifications */}
-          <div className="relative bg-gray-300 p-3 rounded-md col-span-2 ">
+          <div className="relative bg-blue-200 p-3 rounded-md col-span-2 ">
             <button
-              className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600 flex items-center"
+              className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600 flex items-center "
               type="button"
               onClick={() => append({ name: '', score: '' })}
             >
@@ -130,43 +133,45 @@ const JobDetailsFormComponent = ({
                   key={field.id}
                   className="relative flex flex-row items-end flex-wrap sm:flex-nowrap gap-3 mt-4"
                 >
-                  {/* Name Field */}
-                  <div className="relative flex flex-col grow">
+                  {/* Minimum Qualification Field */}
+                  <div className="relative flex flex-col">
                     <label
                       className="text-gray-700"
                       htmlFor={`qualification_name-${index}`}
                     >
                       Minimum Qualification
-                      <span className="text-red-500 required-dot text-lg">
-                        {' '}
-                        *
-                      </span>
+                      <span className="text-red-500 required-dot text-lg"> *</span>
                     </label>
 
                     <Controller
                       render={({ field }) => (
-                        <input
+                        <select
+                          id={`qualification_name-${index}`}
+                          className={`px-4 py-2 border rounded-md  w-full
+                    focus:outline-none text-xs ${
+                      errors.minimumQualifications?.[index]?.name
+                        ? 'border-red-500'
+                        : 'border-gray-500 focus:border-blue-400 focus:ring-blue-300 focus:ring-opacity-40 focus:ring'
+                    }
+                    `}
+                          {...field}
                           onKeyUp={() => {
                             trigger(`minimumQualifications.${index}.name`);
                           }}
-                          id={`qualification_name-${index}`}
-                          placeholder="Ex. 10th , 12th, UG, PG, PhD, etc."
-                          className={`px-4 py-2 border rounded-md  grow
-                      focus:outline-none  ${
-                        errors.minimumQualifications?.[index]?.name
-                          ? 'border-red-500'
-                          : 'border-gray-500 focus:border-blue-400 focus:ring-blue-300 focus:ring-opacity-40 focus:ring'
-                      }
-                      `}
-                          {...field}
-                        />
+                        >
+                          <option value="" disabled>
+                            Select a level
+                          </option>
+                          <option value="ug">UG</option>
+                          <option value="pg">PG</option>
+                          <option value="phd">PhD</option>
+                        </select>
                       )}
                       name={`minimumQualifications.${index}.name`}
                       control={control}
                       defaultValue={field.name}
                       rules={{
-                        required:
-                          'Please enter a qualification / delete this field',
+                        required: 'Required',
                       }}
                     />
                     {errors.minimumQualifications?.[index]?.name && (
@@ -176,17 +181,14 @@ const JobDetailsFormComponent = ({
                     )}
                   </div>
 
-                  {/* Value Field */}
-                  <div className="relative flex flex-col grow">
+                  {/* Minimum Marks Field */}
+                  <div className="relative flex flex-col ">
                     <label
                       className="text-gray-700"
                       htmlFor={`qualification_score-${index}`}
                     >
                       Minimum Marks
-                      <span className="text-red-500 required-dot text-lg">
-                        {' '}
-                        *
-                      </span>
+                      <span className="text-red-500 required-dot text-lg"> *</span>
                     </label>
 
                     <Controller
@@ -197,8 +199,8 @@ const JobDetailsFormComponent = ({
                           }}
                           id={`qualification_score-${index}`}
                           placeholder="Ex. 75% / A / 4.0"
-                          className={`px-4 py-2 border rounded-md  grow
-                      focus:outline-none ${
+                          className={`px-4 py-2 border rounded-md  
+                      focus:outline-none text-xs ${
                         errors.minimumQualifications?.[index]?.score
                           ? 'border-red-500'
                           : 'border-gray-500 focus:border-blue-400 focus:ring-blue-300 focus:ring-opacity-40 focus:ring'
@@ -223,7 +225,7 @@ const JobDetailsFormComponent = ({
 
                   {/* Delete Row Button */}
                   <button
-                    className="h-10 px-6 py-2 text-white transition-colors duration-200 transform bg-red-700 rounded-md hover:bg-red-600 focus:outline-none focus:bg-red-600"
+                    className="h-10 px-6 py-2 text-white transition-colors duration-300 transform bg-red-700 rounded-md hover:bg-red-600 focus:outline-none focus:bg-red-600"
                     type="button"
                     onClick={() => remove(index)}
                   >
@@ -258,7 +260,7 @@ const JobDetailsFormComponent = ({
                 }}
                 id="experience"
                 type="text"
-                placeholder="Ex. 6m+"
+                placeholder="Ex. 6m+, 1y+, 2y+, 3y+"
                 className={`
               w-full px-4 py-2 border rounded-md focus:outline-none   ${
                 errors?.experience
@@ -309,10 +311,7 @@ const JobDetailsFormComponent = ({
             <div className="flex gap-4 flex-col sm:flex-row">
               {/* Salary From */}
               <div className="relative overflow-hidden w-48 md:w-32">
-                <label
-                  className="text-gray-700 whitespace-nowrap"
-                  htmlFor="salaryFrom"
-                >
+                <label className="text-gray-700 whitespace-nowrap" htmlFor="salaryFrom">
                   Salary from
                   <span className="text-red-500 required-dot text-lg"> *</span>
                 </label>
@@ -342,10 +341,7 @@ const JobDetailsFormComponent = ({
 
               {/* Salary To */}
               <div className="relative overflow-hidden w-48 md:w-32">
-                <label
-                  className="text-gray-700 whitespace-nowrap"
-                  htmlFor="salaryTo"
-                >
+                <label className="text-gray-700 whitespace-nowrap" htmlFor="salaryTo">
                   Salary upto
                   <span className="text-red-500 required-dot text-lg"> *</span>
                 </label>
@@ -471,7 +467,7 @@ const JobDetailsFormComponent = ({
           <div className="mt-2 self-end">
             <button
               type="submit"
-              className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
+              className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
             >
               Save
             </button>
@@ -489,15 +485,56 @@ const CompanyDetailsFormComponent = ({
   errors,
   updatedJobDetails,
   setUpdatedJobDetails,
+  job,
 }) => {
   const onSaveClick = (data) => {
-    console.log(data);
+    data.companyPicLink = url;
     setUpdatedJobDetails(data);
   };
+
+  const [pickedFile, setPickedFile] = useState(null);
+  const [url, setUrl] = useState('');
+  // const [progresspercent, setProgresspercent] = useState(0);
+
+  const fileChangeHandler = (event) => {
+    setPickedFile(event.target.files[0]);
+  };
+
+  const fileUploadHandler = (e) => {
+    e.preventDefault();
+    if (pickedFile === null) {
+      return alert('Please pick a file first');
+    }
+
+    const fileName = pickedFile.name + v4();
+
+    // Sending File to Firebase Storage
+    var storageRef = ref(storage, `/companyPics/${fileName}`);
+    const uploadTask = uploadBytesResumable(storageRef, pickedFile);
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        // const progress = Math.round(
+        //   (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+        // );
+        // setProgresspercent(progress);
+      },
+      (error) => {
+        alert(error);
+      },
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          setUrl(downloadURL);
+        });
+      }
+    );
+  };
+
   return (
     <>
       <form onSubmit={handleSubmit(onSaveClick)}>
-        <div className="flex gap-4 flex-col p-4 bg-gray-200  rounded-md">
+        <div className="flex gap-4 flex-col p-4 bg-blue-100  rounded-md">
           <div className="flex gap-4 flex-col md:flex-row ">
             {/* Company Name  */}
             <div className="relative grow">
@@ -600,11 +637,41 @@ const CompanyDetailsFormComponent = ({
             />
           </div>
 
+          {/* Comapny Image Pic */}
+          <div>
+            <label className="text-gray-700" htmlFor="company_image">
+              Company Image
+            </label>
+
+            {/* Image Upload */}
+            <div className="w-full flex-col justify-center items-center gap-6 text-sm">
+              <input
+                type="file"
+                id="company_image"
+                className="bg-blue-100 px-4 py-3 rounded-md w-full sm:w-[65%]"
+                onChange={fileChangeHandler}
+              />
+
+              <button
+                className="bg-blue-600 text-gray-100 rounded-full px-6 py-2 w-fit font-bold"
+                onClick={fileUploadHandler}
+              >
+                Upload Image
+              </button>
+
+              <img
+                className="w-32 h-32 bg-blue-50 object-cover rounded-lg mt-5"
+                src={url || job.company_picture}
+                alt="company_image"
+              />
+            </div>
+          </div>
+
           {/* Save Button */}
           <div className="flex justify-end mt-6">
             <button
               type="submit"
-              className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
+              className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
             >
               Save
             </button>
@@ -657,9 +724,7 @@ const JobEdit = () => {
 
   const onSubmitAllButtonClick = async () => {
     if (!updatedJobDetails) {
-      return toast(
-        'Please click the "Save" button to save the data before submitting!'
-      );
+      return toast('Please click the "Save" button to save the data before submitting!');
     }
 
     // If we want to only send the data that has been updated, we can use the below code. Otherwise since it is small amount of data, we can send the whole object and update the entire job data at the DB.
@@ -675,11 +740,11 @@ const JobEdit = () => {
     let finalJobDetails = { ...updatedJobDetails };
     // console.log(updatedJobDetails);
 
-    // Adding skillsRequired back in as an array
+    // Adding skillsRequired back in as an array, currently it is comma seprated string
     delete finalJobDetails.skillsRequired;
-    finalJobDetails.skillsRequired =
-      updatedJobDetails.skillsRequired.split(',');
+    finalJobDetails.skillsRequired = updatedJobDetails.skillsRequired.split(',');
 
+    // console.log('finalJobDetails', finalJobDetails);
     // Add update date in proper format, after the comparison is done, or comparison would have had this key as well
     // (monogoose model has timestamps for this, but we need to maunally enter date for table sorting, otherwise sorting by date happens on the "2022-04-02T18:40:13.745Z" and not on the formatted date, 4 Apr 2022, as displayed in the table)
     const jobUpdateDate = new Date(new Date()).toLocaleString('en-GB', {
@@ -689,121 +754,129 @@ const JobEdit = () => {
     });
     finalJobDetails.jobUpdateDate = jobUpdateDate;
 
-    console.log(finalJobDetails);
+    // console.log(finalJobDetails);
     dispatch(editJob(finalJobDetails));
   };
 
   const resetForm = () => {
     // Need to transform skillsRequired back to String to properly reset the form, because our react hook form is supposed to handle it
     // as a string only, or we'd need to change that piece of code to handle arrays instead of string
-    job.skillsRequired = job.skillsRequired.toString();
-    reset(job);
+    // job.skillsRequired = job.skillsRequired.toString();
+    // reset(job);
+    // Instead of editing the job object, creating a deep copy just for use in the reset method
+    const jobObjForReset = JSON.parse(JSON.stringify(job));
+    jobObjForReset.skillsRequired = jobObjForReset.skillsRequired.toString();
+    reset(jobObjForReset);
   };
 
   useEffect(() => {
     resetForm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobs]);
 
   return (
     <>
-      <DefaultLayout>
-        <div className="container p-4">
-          <div className="pb-4 ">
-            <p
-              tabIndex="0"
-              className="focus:outline-none text-lg sm:text-lg md:text-xl lg:text-2xl font-bold leading-normal text-gray-800"
-            >
-              Update Posted Job
-            </p>
+      {/* <div className="container p-8"> */}
+      <div className="p-4 md:p-8">
+        <div className="pb-4 ">
+          <p
+            tabIndex="0"
+            className="focus:outline-none text-lg sm:text-lg md:text-xl lg:text-2xl font-bold leading-normal text-gray-800 mb-4"
+          >
+            Update Posted Job
+            <Link to={`/postedjobs`} className="text-blue-600 text-base block">
+              Visit "Posted Jobs" to delete a job
+            </Link>
+          </p>
 
-            {/* Tabs Container */}
-            <ul className="nav nav-tabs flex flex-row flex-nowrap justify-start overflow-auto list-none mb-0">
-              {tabs.map((tab, index) => (
-                <li className="nav-item" key={index}>
-                  <button
-                    className={`inline-block nav-link px-4 py-2 border-b-2 whitespace-nowrap  ${
-                      activeTab === index + 1
-                        ? `border-blue-600 text-blue-600 bg-blue-500/10 rounded-t`
-                        : 'hover:border-gray-500 hover:bg-gray-100'
-                    } `}
-                    onClick={() => toggleTab(index + 1)}
-                  >
-                    {tab}
-                  </button>
-                </li>
-              ))}
-            </ul>
-
-            {/* Corresponding Tab's Content */}
-            <div className=" py-3 mx-auto">
-              {activeTab === 1 && (
-                <JobDetailsFormComponent
-                  {...{
-                    register,
-                    handleSubmit,
-                    trigger,
-                    control,
-                    errors,
-                    updatedJobDetails,
-                    setUpdatedJobDetails,
-                  }}
-                />
-              )}
-              {activeTab === 2 && (
-                <CompanyDetailsFormComponent
-                  {...{
-                    register,
-                    handleSubmit,
-                    trigger,
-                    errors,
-                    updatedJobDetails,
-                    setUpdatedJobDetails,
-                  }}
-                />
-              )}
-
-              {/* Bottom-most Buttons */}
-              <div className="flex flex-col-reverse md:flex-row justify-end mt-6 gap-3">
-                {/* Submit Button */}
+          {/* Tabs Container */}
+          <ul className="nav  w-[84vw] md:w-full  flex flex-row flex-nowrap justify-start overflow-auto no-scrollbar list-none mb-0">
+            {tabs.map((tab, index) => (
+              <li className="nav-item" key={index}>
                 <button
-                  onClick={onSubmitAllButtonClick}
-                  type="submit"
-                  className={`relative md:w-48 px-3 py-2 text-white
-                transition-colors duration-200 transform bg-blue-700 rounded-md
+                  className={`inline-block nav-link px-4 py-2 border-b-2 whitespace-nowrap  ${
+                    activeTab === index + 1
+                      ? `border-blue-600 text-blue-600 bg-blue-500/10 rounded-t`
+                      : 'hover:border-gray-500 hover:bg-gray-100  transition '
+                  } `}
+                  onClick={() => toggleTab(index + 1)}
+                >
+                  {tab}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {/* Corresponding Tab's Content */}
+          <div className=" py-3 mx-auto">
+            {activeTab === 1 && (
+              <JobDetailsFormComponent
+                {...{
+                  register,
+                  handleSubmit,
+                  trigger,
+                  control,
+                  errors,
+                  updatedJobDetails,
+                  setUpdatedJobDetails,
+                }}
+              />
+            )}
+            {activeTab === 2 && (
+              <CompanyDetailsFormComponent
+                {...{
+                  register,
+                  handleSubmit,
+                  trigger,
+                  errors,
+                  updatedJobDetails,
+                  setUpdatedJobDetails,
+                  job,
+                }}
+              />
+            )}
+
+            {/* Bottom-most Buttons */}
+            <div className="flex flex-col-reverse md:flex-row justify-end mt-6 gap-3">
+              {/* Submit Button */}
+              <button
+                onClick={onSubmitAllButtonClick}
+                type="submit"
+                className={`relative md:w-48 px-3 py-2 text-white
+                transition-colors duration-300 transform bg-blue-700 rounded-md
                 hover:bg-blue-600 focus:outline-none focus:bg-blue-600`}
-                >
-                  <p className="m-0">Update Job</p>
-                  <p className="m-0 absolute right-0 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                    {loading && <SpinnerLoader />}
-                  </p>
-                </button>
+              >
+                <p className="m-0">Update Job</p>
+                <p className="m-0 absolute right-0 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                  {loading && <SpinnerLoader />}
+                </p>
+              </button>
 
-                {/* Next Button */}
-                <button
-                  onClick={onNextButtonClick}
-                  type="button"
-                  className="px-6 py-2 text-white
-                transition-colors duration-200 transform bg-gray-700 rounded-md
+              {/* Next Button */}
+              <button
+                onClick={onNextButtonClick}
+                type="button"
+                className="px-6 py-2 text-white
+                transition-colors duration-300 transform bg-gray-700 rounded-md
                 hover:bg-gray-600 focus:outline-none focus:bg-gray-600"
-                >
-                  Next Tab
-                </button>
+              >
+                Next Tab
+              </button>
 
-                {/* Reset Button */}
-                <button
-                  onClick={resetForm}
-                  type="button"
-                  className="px-6 py-2 text-white
-                transition-colors duration-200 transform bg-gray-700 rounded-md
+              {/* Reset Button */}
+              <button
+                onClick={resetForm}
+                type="button"
+                className="px-6 py-2 text-white
+                transition-colors duration-300 transform bg-gray-700 rounded-md
                 hover:bg-gray-600 focus:outline-none focus:bg-gray-600"
-                >
-                  Reset All Fields
-                </button>
-              </div>
+              >
+                Reset All Fields
+              </button>
             </div>
           </div>
         </div>
-      </DefaultLayout>
+      </div>
     </>
   );
 };

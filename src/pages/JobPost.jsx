@@ -1,11 +1,13 @@
-import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { SpinnerLoader } from '../components';
-import DefaultLayout from '../components/DefaultLayout';
 import { postJob } from '../redux/actions/jobActions';
+import { v4 } from 'uuid';
+import { storage } from '../firebase';
+import { ref, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 
 const JobDetailsFormComponent = ({
   register,
@@ -27,9 +29,7 @@ const JobDetailsFormComponent = ({
       !newJobDetails?.hasOwnProperty('company_name') &&
       !newJobDetails?.hasOwnProperty('company_email')
     ) {
-      return toast(
-        'Company details are required before submitting the new job'
-      );
+      return toast('Company details are required before submitting the new job');
     }
   };
 
@@ -37,12 +37,13 @@ const JobDetailsFormComponent = ({
     if (fields.length === 0) {
       append({ name: '', score: '' });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="flex gap-4 p-4 bg-gray-200 flex-col rounded-md ">
+        <div className="flex gap-4 p-4 bg-blue-100 flex-col rounded-md ">
           <div className="flex flex-col md:flex-row gap-4">
             {/* Title */}
             <div className="relative grow ">
@@ -110,9 +111,9 @@ const JobDetailsFormComponent = ({
           </div>
 
           {/* Minimum Qualifications */}
-          <div className="relative bg-gray-300 p-3 rounded-md col-span-2 ">
+          <div className="relative bg-blue-200 p-3 rounded-md col-span-2 ">
             <button
-              className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600 flex items-center"
+              className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600 flex items-center"
               type="button"
               onClick={() => append({ name: '', score: '' })}
             >
@@ -135,45 +136,47 @@ const JobDetailsFormComponent = ({
               return (
                 <div
                   key={field.id}
-                  className="relative flex flex-row items-end flex-wrap sm:flex-nowrap gap-3 mt-4"
+                  className="relative flex flex-row items-end flex-wrap lg:flex-nowrap gap-3 mt-4"
                 >
-                  {/* Name Field */}
-                  <div className="relative flex flex-col grow">
+                  {/* Minimum Qualification Field */}
+                  <div className="relative flex flex-col w-80">
                     <label
                       className="text-gray-700"
                       htmlFor={`qualification_name-${index}`}
                     >
                       Minimum Qualification
-                      <span className="text-red-500 required-dot text-lg">
-                        {' '}
-                        *
-                      </span>
+                      <span className="text-red-500 required-dot text-lg"> *</span>
                     </label>
 
                     <Controller
                       render={({ field }) => (
-                        <input
+                        <select
+                          id={`qualification_name-${index}`}
+                          className={`px-4 py-2 border rounded-md text-xs  w-full
+                    focus:outline-none  ${
+                      errors.minimumQualifications?.[index]?.name
+                        ? 'border-red-500'
+                        : 'border-gray-500 focus:border-blue-400 focus:ring-blue-300 focus:ring-opacity-40 focus:ring'
+                    }
+                    `}
+                          {...field}
                           onKeyUp={() => {
                             trigger(`minimumQualifications.${index}.name`);
                           }}
-                          id={`qualification_name-${index}`}
-                          placeholder="Ex. 10th , 12th, UG, PG, PhD, etc."
-                          className={`px-4 py-2 border rounded-md  grow
-                      focus:outline-none  ${
-                        errors.minimumQualifications?.[index]?.name
-                          ? 'border-red-500'
-                          : 'border-gray-500 focus:border-blue-400 focus:ring-blue-300 focus:ring-opacity-40 focus:ring'
-                      }
-                      `}
-                          {...field}
-                        />
+                        >
+                          <option value="" disabled>
+                            Select a level
+                          </option>
+                          <option value="ug">UG</option>
+                          <option value="pg">PG</option>
+                          <option value="phd">PhD</option>
+                        </select>
                       )}
                       name={`minimumQualifications.${index}.name`}
                       control={control}
                       defaultValue={field.name}
                       rules={{
-                        required:
-                          'Please enter a qualification / delete this field',
+                        required: 'Required',
                       }}
                     />
                     {errors.minimumQualifications?.[index]?.name && (
@@ -183,17 +186,14 @@ const JobDetailsFormComponent = ({
                     )}
                   </div>
 
-                  {/* Value Field */}
-                  <div className="relative flex flex-col grow">
+                  {/* Minimum Marks Field */}
+                  <div className="relative flex flex-col ">
                     <label
                       className="text-gray-700"
                       htmlFor={`qualification_score-${index}`}
                     >
                       Minimum Marks
-                      <span className="text-red-500 required-dot text-lg">
-                        {' '}
-                        *
-                      </span>
+                      <span className="text-red-500 required-dot text-lg"> *</span>
                     </label>
 
                     <Controller
@@ -204,7 +204,7 @@ const JobDetailsFormComponent = ({
                           }}
                           id={`qualification_score-${index}`}
                           placeholder="Ex. 75% / A / 4.0"
-                          className={`px-4 py-2 border rounded-md  grow
+                          className={`px-4 py-2 border rounded-md  text-xs  w-full
                       focus:outline-none ${
                         errors.minimumQualifications?.[index]?.score
                           ? 'border-red-500'
@@ -230,7 +230,7 @@ const JobDetailsFormComponent = ({
 
                   {/* Delete Row Button */}
                   <button
-                    className="h-10 px-6 py-2 text-white transition-colors duration-200 transform bg-red-700 rounded-md hover:bg-red-600 focus:outline-none focus:bg-red-600"
+                    className="h-10 px-6 py-2 text-white transition-colors duration-300 transform bg-red-700 rounded-md hover:bg-red-600 focus:outline-none focus:bg-red-600"
                     type="button"
                     onClick={() => remove(index)}
                   >
@@ -265,7 +265,7 @@ const JobDetailsFormComponent = ({
                 }}
                 id="experience"
                 type="text"
-                placeholder="Ex. 6m+"
+                placeholder="Ex. 6m+, 1y+, 2y+, 3y+"
                 className={`
               w-full px-4 py-2 border rounded-md focus:outline-none   ${
                 errors?.experience
@@ -315,11 +315,8 @@ const JobDetailsFormComponent = ({
 
             <div className="flex gap-4 flex-col sm:flex-row">
               {/* Salary From */}
-              <div className="relative overflow-hidden w-48 md:w-32">
-                <label
-                  className="text-gray-700 whitespace-nowrap"
-                  htmlFor="salaryFrom"
-                >
+              <div className="relative overflow-hidden w-full md:w-32">
+                <label className="text-gray-700 whitespace-nowrap" htmlFor="salaryFrom">
                   Salary from
                   <span className="text-red-500 required-dot text-lg"> *</span>
                 </label>
@@ -348,11 +345,8 @@ const JobDetailsFormComponent = ({
               </div>
 
               {/* Salary To */}
-              <div className="relative overflow-hidden w-48 md:w-32">
-                <label
-                  className="text-gray-700 whitespace-nowrap"
-                  htmlFor="salaryTo"
-                >
+              <div className="relative overflow-hidden w-full md:w-32">
+                <label className="text-gray-700 whitespace-nowrap" htmlFor="salaryTo">
                   Salary upto
                   <span className="text-red-500 required-dot text-lg"> *</span>
                 </label>
@@ -478,7 +472,7 @@ const JobDetailsFormComponent = ({
           <div className="mt-2 self-end">
             <button
               type="submit"
-              className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
+              className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
             >
               Save
             </button>
@@ -498,6 +492,7 @@ const CompanyDetailsFormComponent = ({
   setNewJobDetails,
 }) => {
   const onSubmit = (data) => {
+    data.companyPicLink = url;
     setNewJobDetails(data);
 
     if (
@@ -506,16 +501,56 @@ const CompanyDetailsFormComponent = ({
     ) {
       toast(
         <p>
-          Form saved. Please click the <strong>Submit Button </strong>
+          Form saved. Please click <strong>Post New Job </strong>
           to add the new job.
         </p>
       );
     }
   };
+
+  const [pickedFile, setPickedFile] = useState(null);
+  const [url, setUrl] = useState('');
+  // const [progresspercent, setProgresspercent] = useState(0);
+
+  const fileChangeHandler = (event) => {
+    setPickedFile(event.target.files[0]);
+  };
+
+  const fileUploadHandler = (e) => {
+    e.preventDefault();
+    if (pickedFile === null) {
+      return alert('Please pick a file first');
+    }
+
+    const fileName = pickedFile.name + v4();
+
+    // Sending File to Firebase Storage
+    var storageRef = ref(storage, `/companyPics/${fileName}`);
+    const uploadTask = uploadBytesResumable(storageRef, pickedFile);
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        // const progress = Math.round(
+        //   (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+        // );
+        // setProgresspercent(progress);
+      },
+      (error) => {
+        alert(error);
+      },
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          setUrl(downloadURL);
+        });
+      }
+    );
+  };
+
   return (
     <>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="flex gap-4 flex-col p-4 bg-gray-200  rounded-md">
+        <div className="flex gap-4 flex-col p-4 bg-blue-100  rounded-md">
           <div className="flex gap-4 flex-col md:flex-row ">
             {/* Company Name  */}
             <div className="relative grow">
@@ -618,11 +653,41 @@ const CompanyDetailsFormComponent = ({
             />
           </div>
 
+          {/* Comapny Image Pic */}
+          <div>
+            <label className="text-gray-700" htmlFor="company_image">
+              Company Image
+            </label>
+
+            {/* Image Upload */}
+            <div className="w-full flex-col justify-center items-center gap-6 text-sm">
+              <input
+                type="file"
+                id="company_image"
+                className="bg-blue-100 px-4 py-3 rounded-md w-full sm:w-[65%]"
+                onChange={fileChangeHandler}
+              />
+
+              <button
+                className="bg-blue-600 text-gray-100 rounded-full px-6 py-2 w-fit font-bold"
+                onClick={fileUploadHandler}
+              >
+                Upload Image
+              </button>
+
+              <img
+                className="w-32 h-32 bg-blue-50 object-cover rounded-lg mt-5"
+                src={url}
+                alt="company_image"
+              />
+            </div>
+          </div>
+
           {/* Save Button */}
           <div className="flex justify-end mt-6">
             <button
               type="submit"
-              className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
+              className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
             >
               Save
             </button>
@@ -667,9 +732,7 @@ const JobPost = () => {
 
   const onSubmitAllButtonClick = async () => {
     if (!newJobDetails) {
-      return toast(
-        'Please click the "Save" button to save the data before submitting!'
-      );
+      return toast('Please click the "Save" button to save the data before submitting!');
     } else if (
       !newJobDetails.company_name ||
       newJobDetails.company_name === '' ||
@@ -678,8 +741,8 @@ const JobPost = () => {
     ) {
       return toast(
         <p>
-          <strong> Company Details </strong> is not entered/saved. Please fill
-          before submitting!
+          <strong> Company Details </strong> is not entered/saved. Please fill before
+          submitting!
         </p>
       );
     }
@@ -702,30 +765,31 @@ const JobPost = () => {
       year: 'numeric',
     });
     finalJobDetails.jobPostDate = jobPostDate;
-    console.log(finalJobDetails);
+    // console.log(finalJobDetails);
     dispatch(postJob(finalJobDetails));
   };
 
   return (
     <>
-      <DefaultLayout>
-        <div className="container p-4">
+      {loggedInUser ? (
+        // <div className="container p-8">
+        <div className="p-4 md:p-8">
           <div className="pb-4 ">
             <p
               tabIndex="0"
-              className="focus:outline-none text-lg sm:text-lg md:text-xl lg:text-2xl font-bold leading-normal text-gray-800"
+              className="focus:outline-none text-lg sm:text-lg md:text-xl lg:text-2xl font-bold leading-normal text-gray-800 mb-4"
             >
               New Job Post
             </p>
             {/* Tabs Container */}
-            <ul className="nav nav-tabs flex flex-row flex-nowrap justify-start overflow-auto list-none mb-0">
+            <ul className="nav  w-[84vw] md:w-full   flex flex-row flex-nowrap justify-start overflow-auto no-scrollbar list-none mb-0">
               {tabs.map((tab, index) => (
                 <li className="nav-item" key={index}>
                   <button
                     className={`inline-block nav-link px-4 py-2 border-b-2 whitespace-nowrap  ${
                       activeTab === index + 1
                         ? `border-blue-600 text-blue-600 bg-blue-500/10 rounded-t`
-                        : 'hover:border-gray-500 hover:bg-gray-100'
+                        : 'hover:border-gray-500 hover:bg-gray-100 transition '
                     } `}
                     onClick={() => toggleTab(index + 1)}
                   >
@@ -770,7 +834,7 @@ const JobPost = () => {
                   onClick={onSubmitAllButtonClick}
                   type="submit"
                   className={`relative md:w-48 px-3 py-2 text-white
-                transition-colors duration-200 transform bg-blue-700 rounded-md
+                transition-colors duration-300 transform bg-blue-700 rounded-md
                 hover:bg-blue-600 focus:outline-none focus:bg-blue-600`}
                 >
                   <p className="m-0">Post New Job</p>
@@ -784,7 +848,7 @@ const JobPost = () => {
                   onClick={onNextButtonClick}
                   type="button"
                   className="px-6 py-2 text-white
-                transition-colors duration-200 transform bg-gray-700 rounded-md
+                transition-colors duration-300 transform bg-gray-700 rounded-md
                 hover:bg-gray-600 focus:outline-none focus:bg-gray-600"
                 >
                   Next Tab
@@ -804,7 +868,14 @@ const JobPost = () => {
             </div>
           </div>
         </div>
-      </DefaultLayout>
+      ) : (
+        <>
+          <p className="text-base pl-5 pt-5 ">
+            Please <Link to="/login">Login</Link> or <Link to="/signup">Signup</Link> to
+            post a <b>New Job Listing.</b>
+          </p>
+        </>
+      )}
     </>
   );
 };

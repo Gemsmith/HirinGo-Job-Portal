@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import DefaultLayout from '../components/DefaultLayout';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import LoadingJobsLoader from '../components/LoadingJobsLoader';
 import { Link } from 'react-router-dom';
 import SearchBar from '../components/SearchBar';
-import { applyJob } from '../redux/actions/jobActions';
-import { toast } from 'react-toastify';
+import FilterBar from '../components/FilterBar';
+import dummyCompanyImage from '../assets/images/logo-image.png';
 
 const Home = () => {
-  const dummyImage = `https://www.tailwind-kit.com//images/person/4.jpg`;
-
   const { jobs } = useSelector((state) => state.jobsReducer);
   const { loading } = useSelector((state) => state.loaderReducer);
 
@@ -31,7 +28,7 @@ const Home = () => {
   // ];
 
   const skillsRequiredPills = (skillsRequired) => {
-    const arr = skillsRequired.map((skill, index) => {
+    const arr = skillsRequired?.map((skill, index) => {
       if (count >= pillColors.length) {
         count = 0;
       }
@@ -39,7 +36,7 @@ const Home = () => {
       return (
         <span
           key={index}
-          className={`px-4 py-1 rounded-full ${pillColors[count - 1]}`}
+          className={`px-3 py-1 text-xs rounded-full ${pillColors[count - 1]}`}
         >
           {skill}
         </span>
@@ -47,173 +44,195 @@ const Home = () => {
     });
 
     return (
-      <div className="flex gap-4 my-3 whitespace-nowrap overflow-scroll no-scrollbar">
+      <div className="flex gap-3 my-3 whitespace-nowrap overflow-scroll no-scrollbar ">
         {arr}
       </div>
     );
   };
 
-  const dispatch = useDispatch();
   const loggedInUser = JSON.parse(localStorage.getItem('user'));
 
   let userId;
   let user_name;
   let alreadyApplied;
-  if (
-    loggedInUser !== null &&
-    loggedInUser !== undefined &&
-    loggedInUser !== ''
-  ) {
+  if (loggedInUser !== null && loggedInUser !== undefined && loggedInUser !== '') {
     userId = loggedInUser._id;
     user_name = loggedInUser.username;
-    console.log(userId, user_name);
   }
 
-  const applyNowClick = (jobId, userId) => {
-    if (
-      loggedInUser == null ||
-      loggedInUser == undefined ||
-      loggedInUser == ''
-    ) {
-      return toast('Please login to apply for the job');
+  // Filtering Component Functionality
+  const [filteredJobs, setFilteredJobs] = useState(jobs);
+
+  let experienceFilterValuesArray = jobs.map((job) => {
+    return job.experience;
+  });
+  experienceFilterValuesArray = ['All', ...new Set(experienceFilterValuesArray)];
+
+  const handleExpFilter = (experience) => {
+    let filteredArr;
+    if (experience === 'All') {
+      setFilteredJobs(jobs);
+    } else {
+      filteredArr = jobs.filter((job) => {
+        return job.experience === experience;
+      });
+      setFilteredJobs(filteredArr);
     }
-    dispatch(applyJob(jobId, userId));
+  };
+
+  const handleSalaryFilter = (salaryFrom, salaryTo) => {
+    const filteredArr = jobs.filter((job) => {
+      // job's starting salary lies between the filter's range, then return true
+      if (job.salaryFrom >= salaryFrom && job.salaryFrom <= salaryTo) {
+        return job;
+      }
+      return false;
+    });
+    setFilteredJobs(filteredArr);
   };
 
   useEffect(() => {}, [jobs]);
 
   return (
     <>
-      <DefaultLayout>
-        {loading ? (
-          <LoadingJobsLoader />
-        ) : (
-          <div className="h-full p-4">
-            {/* Search Bar */}
-            <SearchBar searchData={jobs} />
+      {loading ? (
+        <LoadingJobsLoader />
+      ) : (
+        <>
+          {jobs && (
+            <div className="flex justify-center">
+              {
+                <FilterBar
+                  expFilterValues={experienceFilterValuesArray}
+                  onExpFilter={handleExpFilter}
+                  onSalaryFilter={handleSalaryFilter}
+                />
+              }
 
-            {jobs.length > 0 && (
-              <div className="my-4">
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-                  {jobs.map((job) => {
-                    // Find if current user has already applied to this job inside the job.appliedCandidates array
-                    if (job !== null && job !== undefined && job !== '') {
-                      let appliedCandidates = job.appliedCandidates;
-                      console.log(
-                        'appliedCandidates ',
-                        job.title,
-                        appliedCandidates
-                      );
-                      alreadyApplied = appliedCandidates.find((candidate) => {
-                        if (candidate.userId === userId) {
-                          return true;
+              <div className="h-full p-4 md:p-8 grow">
+                <div className="flex flex-col md:flex-row md:justify-between">
+                  <span className="font-bold text-2xl mb-2 md:mb-0">
+                    All Jobs ({filteredJobs?.length})
+                  </span>
+
+                  {/* Search Bar */}
+                  <SearchBar searchData={jobs} />
+                </div>
+
+                {jobs.length > 0 && (
+                  <div className="my-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-8">
+                      {/* <div className="flex flex-wrap gap-6"> */}
+                      {filteredJobs.map((job, index) => {
+                        // Find if current user has already applied to this job inside the job?.appliedCandidates array
+                        if (job !== null && job !== undefined && job !== '') {
+                          let appliedCandidates = job?.appliedCandidates;
+
+                          alreadyApplied = appliedCandidates.find((candidate) => {
+                            if (candidate.userId === userId) {
+                              return true;
+                            }
+                            return false;
+                          });
                         }
-                      });
-                      console.log('alreadyApplied', alreadyApplied);
-                    }
 
-                    return (
-                      <div
-                        className=" w-full flex flex-col justify-between shadow-xl hover:bg-gradient-to-br hover:from-blue-200/50 hover:to-red-200/50 p-5 rounded-xl sm:min-w-[18rem]
-                      bg-gradient-to-br from-blue-200/30 to-red-200/30 
-                      "
-                      >
-                        <div>
-                          {/* 1st row */}
-                          <div className="flex justify-between items-center mb-5">
-                            <img
-                              src={job.image || dummyImage}
-                              alt=""
-                              className="h-20 w-20 rounded-full"
-                            />
-                            <div className="flex flex-col items-end">
-                              <span className="font-semibold text-gray-600/70 whitespace-nowrap">
-                                {job.jobPostDate}
+                        return (
+                          <div
+                            key={index}
+                            className=" w-full p-5 rounded-xl sm:min-w-[18rem] flex flex-col justify-between bg-white transition shadow-md 
+                   hover:shadow-xl    "
+                          >
+                            <div>
+                              {/* 1st row */}
+                              <div className="flex justify-between items-center mb-5">
+                                <img
+                                  src={job?.company_picture || dummyCompanyImage}
+                                  alt=""
+                                  className="h-20 w-20 object-contain rounded-full border-2 border-blue-200 "
+                                />
+                                <div className="flex flex-col items-end text-base">
+                                  <span className="font-semibold text-gray-600/70 whitespace-nowrap">
+                                    {job?.jobPostDate}
+                                  </span>
+                                  <span className="text-base font-semibold text-gray-600 whitespace-nowrap">
+                                    {job?.experience}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <p className="text-sm font-medium text-blue-500">
+                                {job?.location}
+                              </p>
+
+                              {/* 2nd row */}
+                              <p className="text-lg font-bold"> {job?.title}</p>
+
+                              {/* 3rd row */}
+                              <span className="text-gray-400 text-base font-medium">
+                                {' '}
+                                {job?.company_name}
                               </span>
-                              <span className="text-base font-semibold text-gray-600 whitespace-nowrap">
-                                {job.experience}
-                              </span>
+
+                              <p className="text-gray-600 text-base font-bold mt-2">
+                                ${job?.salaryFrom} - ${job?.salaryTo}
+                              </p>
+
+                              {/* 4rth row */}
+                              {job !== null &&
+                                job !== undefined &&
+                                job !== '' &&
+                                skillsRequiredPills(job?.skillsRequired)}
+
+                              {/* 3rd row */}
+
+                              <hr className="my-3" />
+
+                              {/* 5th row */}
+                              <p
+                                className="text-base text-gray-500 m-0 mb-3 max-h-28 overflow-auto no-scrollbar lg:text-ellipsis"
+                                style={{ whiteSpace: 'pre-line' }}
+                              >
+                                {job?.smallDescription}
+                              </p>
+                            </div>
+
+                            {/* 6th row */}
+                            <div className="flex flex-col sm:flex-row justify-between sm:gap-6 text-center font-semibold justify-self-end">
+                              {job?.postedBy?.username === user_name ? (
+                                <Link
+                                  to={`/jobs/edit/${job?._id}`}
+                                  className="w-full py-2 text-base  text-white bg-blue-600 rounded-full hover:bg-blue-700 transition"
+                                >
+                                  <button className="font-bold">Edit Now</button>
+                                </Link>
+                              ) : (
+                                alreadyApplied?.userId && (
+                                  <button className="w-full py-2 text-base font-bold text-white  rounded-full whitespace-nowrap ring-2 bg-green-600 ring-green-600 transition ">
+                                    Applied
+                                  </button>
+                                )
+                              )}
+
+                              <hr className="sm:hidden mt-3 mb-1 " />
+
+                              <Link
+                                to={`/jobs/view/${job?._id}`}
+                                className="w-full py-2 text-base font-bold  rounded-full text-gray-600 bg-gray-100  ring-gray-600/70 hover:bg-gray-600/70 hover:text-white  transition "
+                              >
+                                View
+                              </Link>
                             </div>
                           </div>
-
-                          {/* 2nd row */}
-                          <div>
-                            <span className="text-lg font-bold">
-                              {' '}
-                              {job.title}
-                            </span>
-                          </div>
-
-                          {/* 3rd row */}
-                          <span> {job.company_name}</span>
-                          {job !== null &&
-                            job !== undefined &&
-                            job !== '' &&
-                            skillsRequiredPills(job.skillsRequired)}
-                          {/* 4rth row */}
-                          <p className="text-base font-semibold m-0 mb-2">
-                            {job.location}
-                          </p>
-
-                          {/* 5th row */}
-                          <p
-                            className="  text-gray-500 m-0 mb-3 max-h-28 overflow-auto lg:overflow-hidden lg:text-ellipsis"
-                            style={{ whiteSpace: 'pre-line' }}
-                          >
-                            {job.smallDescription}
-                          </p>
-                          {/* 
-                          <p className="leading-relaxed mb-3 w-full h-16 overflow-hidden">
-                 {!job.smallDescription
-                   ? 'No description available'
-                   : job.smallDescription.length > 126
-                   ? job.smallDescription.slice(0, 126) + '...'
-                   : job.smallDescription}
-               </p> */}
-                        </div>
-
-                        {/* 6th row */}
-                        <div className="flex flex-col sm:flex-row justify-between sm:gap-6 text-center font-semibold justify-self-end">
-                          {job.postedBy.username === user_name ? (
-                            <button className="w-full py-2 text-base font-bold text-white bg-blue-600 rounded-full ring-2 ring-blue-600 hover:bg-blue-700">
-                              <Link
-                                to={`/jobs/edit/${job._id}`}
-                                className="text-white hover:text-white "
-                              >
-                                Edit Now
-                              </Link>
-                            </button>
-                          ) : alreadyApplied?.userId ? (
-                            <button className="w-full py-2 text-base font-bold text-white bg-green-600 rounded-full whitespace-nowrap ring-2 ring-green-600">
-                              Applied
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => applyNowClick(job._id, userId)}
-                              className="w-full py-2 text-base font-bold text-white bg-blue-600 rounded-full ring-2 ring-blue-600 hover:bg-blue-700 hover:text-white"
-                            >
-                              Apply
-                            </button>
-                          )}
-
-                          <hr className="sm:hidden mt-3 mb-1 " />
-
-                          <Link
-                            to={`/jobs/view/${job._id}`}
-                            className="w-full py-2 text-base font-bold text-white rounded-full text-gray-600 bg-white ring-1 ring-gray-600/70 hover:bg-gray-600/70 hover:text-white "
-                          >
-                            View
-                          </Link>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        )}
-      </DefaultLayout>
+            </div>
+          )}
+        </>
+      )}
     </>
   );
 };

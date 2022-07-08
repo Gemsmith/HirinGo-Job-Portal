@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { LoadingJobsLoader } from '../components';
-import DefaultLayout from '../components/DefaultLayout';
-import { applyJob, getAJob } from '../redux/actions/jobActions';
+import { applyJob } from '../redux/actions/jobActions';
+import dummyCompanyLogo from '../assets/images/logo-image.png';
 
 const JobView = () => {
   // Hiding all company details, until we create company model is added at the server.
@@ -20,6 +20,26 @@ const JobView = () => {
     'text-white bg-gradient-to-r from-purple-500 to-pink-500',
     'text-white bg-gradient-to-br from-purple-600 to-blue-500',
   ];
+
+  const skillsRequiredPills = (skillsRequired) => {
+    const arr = skillsRequired.map((skill, index) => {
+      if (count >= pillColors.length) {
+        count = 0;
+      }
+      count++;
+      return (
+        <span key={index} className={`px-4 py-1 rounded-full ${pillColors[count - 1]}`}>
+          {skill}
+        </span>
+      );
+    });
+
+    return (
+      <div className="flex gap-4 my-3 whitespace-nowrap overflow-scroll no-scrollbar">
+        {arr}
+      </div>
+    );
+  };
 
   const dispatch = useDispatch();
   const loggedInUser = JSON.parse(localStorage.getItem('user'));
@@ -42,15 +62,10 @@ const JobView = () => {
   let user_name;
   let appliedCandidates;
   let alreadyApplied;
-  if (
-    loggedInUser !== null &&
-    loggedInUser !== undefined &&
-    loggedInUser !== ''
-  ) {
+  if (loggedInUser !== null && loggedInUser !== undefined && loggedInUser !== '') {
     userId = loggedInUser._id;
     user_name = loggedInUser.username;
   }
-  console.log(user_name);
 
   // Find if currnet user has already applied to this job inside the job.appliedCandidates array
   if (job !== null && job !== undefined && job !== '') {
@@ -61,14 +76,14 @@ const JobView = () => {
   }
 
   const applyNowClick = () => {
-    if (
-      loggedInUser == null ||
-      loggedInUser == undefined ||
-      loggedInUser == ''
-    ) {
+    if (loggedInUser === null || loggedInUser === undefined || loggedInUser === '') {
       return toast('Please login to apply for the job');
     }
-    dispatch(applyJob(jobId, userId));
+
+    document.querySelectorAll('#applyNowButton')[0].disabled = true;
+    document.querySelectorAll('#applyNowButton')[1].disabled = true;
+
+    dispatch(applyJob(jobId, userId, Date.now()));
   };
 
   useEffect(() => {
@@ -95,47 +110,105 @@ const JobView = () => {
     //   await mockApi(true, 1000);
     // };
     // callMockApi();
+    document.querySelector('.min-h-screen').scrollIntoView();
   }, [jobs, job]);
 
   if (!job || job === null || job === undefined || job === '' || job === ' ') {
-    return (
-      <DefaultLayout>
-        <LoadingJobsLoader />
-      </DefaultLayout>
-    );
+    return <LoadingJobsLoader />;
   }
 
   return (
-    <div className="min-h-screen ">
-      <DefaultLayout>
-        <div className="container px-12 py-4 mt-4 text-base leading-snug flex gap-10">
-          {/* Left Div - Job Info */}
-          <div className="lg:w-6/12">
-            {/* 1st Para - Job Info.*/}
-            <div>
-              <div className="text-sm text-white font-semibold rounded-full px-3 bg-green-600 w-fit">
-                {job.department}
+    // Adding scroll-margin beacuse:
+    // 1. for some reason page was scrolling to the bottom on reload, so we added a scrolllintoview in useEffect.
+    // 2. But bcoz of fixed scrollbar, scroll margin is needed to bring the element 70px down.
+    <div className="min-h-screen " style={{ scrollMargin: '70px' }}>
+      {/* <div className="container px-6 md:px-12 py-4 mt-4 text-base leading-snug flex gap-10"> */}
+      <div className="px-6 md:px-12 py-4 mt-4 text-base leading-snug flex gap-10">
+        {/* Left Div - Job Info */}
+        <div className="xl:w-6/12 overflow-hidden no-scrollbar">
+          {/* 1st Para - Job Info.*/}
+          <div>
+            {/* Job Title */}
+            <h1 className="text-2xl font-bold mb-2">{job.title}</h1>
+            <div className="text-sm text-white font-semibold rounded-full px-3 bg-green-600 w-fit mb-5">
+              {job.department}
+            </div>
+
+            <div className="flex flex-col xs:flex-row gap-5 mb-3">
+              {/* Company Image */}
+              <img
+                src={job?.company_picture || dummyCompanyLogo}
+                alt="company_picture"
+                className="rounded-lg w-24 h-24 block object-cover break-words overflow-hidden"
+              />
+
+              <div className="">
+                {/* Company Name */}
+                <div className="flex gap-1 mb-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="gray"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z"
+                      clipRule="evenodd"
+                    />
+                    <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z" />
+                  </svg>
+                  <strong>{job.company_name}</strong>
+                </div>
+
+                {/* Location */}
+                <div className="flex gap-1 mb-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="gray"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  {job.location}
+                </div>
+
+                {/* Salary */}
+                <span className="flex gap-1">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="gray"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>{' '}
+                  ${job.salaryFrom} - ${job.salaryTo} per month
+                </span>
               </div>
-              {/* Job Title */}
-              <h1 className="text-2xl font-bold mb-0">{job.title}</h1>
+            </div>
 
-              {/* Sub Heading */}
-              {/* Link for immediate description */}
-              <div className="mb-3">{job.company_name}</div>
-              <div>{job.location}</div>
-
-              {/* Link for company additional info */}
-              {/* If ratings available only then show this div */}
-              {/* <div className="mt-3 mb-2 px-3 py-1 border-2 rounded-md bg-gray-100"> */}
-              {/* <Link
+            {/* Link for company additional info */}
+            {/* If ratings available only then show this div */}
+            {/* <div className="mt-3 mb-2 px-3 py-1 border-2 rounded-md bg-gray-100"> */}
+            {/* <Link
                   to="/company/2321213123"
                   className="text-lg font-bold text-black"
                 >
                   {job.company_name}
                 </Link> */}
 
-              {/* Stars */}
-              {/* <div className="flex items-center mb-3">
+            {/* Stars */}
+            {/* <div className="flex items-center mb-3">
                   <div className="flex items-center mr-3">
                     <svg
                       className="mx-1 w-4 h-4 fill-current text-gray-500"
@@ -180,115 +253,90 @@ const JobView = () => {
                   </div>
                   <p className="m-0">________ 14,000 reviews ________</p>
                 </div> */}
-              {/* </div> */}
+            {/* </div> */}
+          </div>
+
+          {/* 2nd Para - Skills*/}
+
+          {/* Skills */}
+          <div className="flex gap-4 w-56 xxs:w-64   xs:w-92 md:w-full whitespace-nowrap overflow-hidden ">
+            {job && skillsRequiredPills(job?.skillsRequired)}
+          </div>
+
+          {/* Buttons become visible in mobile view */}
+          <div className="block lg:hidden mt-5">
+            {job.postedBy.username === user_name ? (
+              <button className="transition w-36 py-2 text-lg font-bold text-white rounded-lg border-b-4 border-b-blue-900 bg-blue-600 hover:bg-blue-700 active:translate-y-[0.125rem] active:border-b-blue-700 ">
+                <Link to={`/jobs/edit/${job._id}`} className="text-white">
+                  Edit Now
+                </Link>
+              </button>
+            ) : alreadyApplied ? (
+              <button className="text-white text-lg font-bold bg-green-600 rounded-full px-5 py-2 whitespace-nowrap shadow-lg border-b-green-900">
+                Applied
+              </button>
+            ) : (
+              <button
+                onClick={applyNowClick}
+                id="applyNowButton"
+                className="transition w-36 md:w-80 py-2 text-lg font-bold text-white rounded-lg border-b-4 border-b-blue-900 bg-blue-600 hover:bg-blue-700 active:translate-y-[0.125rem] active:border-b-blue-700 "
+              >
+                Apply now
+              </button>
+            )}
+          </div>
+
+          <hr className="my-6 bg-neutral-300" />
+
+          {/* 3rd Para */}
+          <div className="">
+            {/* Job Description */}
+            <div className="mb-6">
+              <p className="mb-1">
+                <b>Job Description: </b>
+              </p>
+              <p className="flex" style={{ whiteSpace: 'pre-line' }}>
+                {job.fullDescription}
+              </p>
             </div>
 
-            {/* 2nd Para - Salary, Skills*/}
-            <div className="mt-3">
-              {/* Salary */}
-              <span>
-                ₹{job.salaryFrom} - ₹{job.salaryTo} per month
-              </span>
-
-              {/* Skills */}
-              {/* Skills */}
-              {/* Skills */}
-              {/* Skills */}
-              {/* Skills */}
-              {/* Skills */}
-              {job && (
-                <div className="flex gap-2 mt-3">
-                  {job.skillsRequired.map((skill, index) => {
-                    if (count >= pillColors.length) {
-                      count = 0;
-                    }
-                    count++;
+            {/* Minimum Requirements */}
+            <div className="mb-6">
+              <p className="mb-1">
+                <b>Minimum Requirements: </b>
+              </p>
+              <div>
+                {job &&
+                  job.minimumQualifications.map((item, index) => {
                     return (
-                      <span
-                        key={index}
-                        className={`px-4 py-1 rounded-full ${
-                          pillColors[count - 1]
-                        }`}
-                      >
-                        {skill}
-                      </span>
+                      <ul key={index}>
+                        <li>
+                          {item.name.toUpperCase()} : {item.score}
+                        </li>
+                      </ul>
                     );
                   })}
-                </div>
-              )}
+              </div>
             </div>
 
-            {/* Buttons become visible in mobile view */}
-            <div className="block lg:hidden mt-5">
-              {job.postedBy.username === user_name ? (
-                <button className="transition w-36 py-2 text-lg font-bold text-white rounded-lg border-b-4 border-b-blue-900 bg-blue-600 hover:bg-blue-700 active:translate-y-[0.125rem] active:border-b-blue-700 ">
-                  <Link to={`/editjob/${job._id}`} className="text-white">
-                    Edit Now
-                  </Link>
-                </button>
-              ) : alreadyApplied ? (
-                <button className="text-white text-lg font-bold bg-green-600 rounded-full px-5 py-2 whitespace-nowrap shadow-lg border-b-green-900">
-                  Applied
-                </button>
-              ) : (
-                <button
-                  onClick={applyNowClick}
-                  className="transition w-36 md:w-80 py-2 text-lg font-bold text-white rounded-lg border-b-4 border-b-blue-900 bg-blue-600 hover:bg-blue-700 active:translate-y-[0.125rem] active:border-b-blue-700 "
-                >
-                  Apply now
-                </button>
-              )}
-            </div>
-
-            <hr className="my-6 bg-neutral-300" />
-
-            {/* 3rd Para */}
-            <div className="">
-              {/* Job Description */}
-              <div className="mb-6">
-                <p className="mb-1">
-                  <b>Job Description: </b>
-                </p>
-                <p style={{ whiteSpace: 'pre-line' }}>{job.fullDescription}</p>
-              </div>
-
-              {/* Minimum Requirements */}
-              <div className="mb-6">
-                <p className="mb-1">
-                  <b>Minimum Requirements: </b>
-                </p>
-                <div>
-                  {job &&
-                    job.minimumQualifications.map((item, index) => {
-                      return (
-                        <ul key={index}>
-                          <li>
-                            {item.name} : {item.score}
-                          </li>
-                        </ul>
-                      );
-                    })}
-                </div>
-              </div>
-
-              {/* Job Types, Salary, Schedule, Experience */}
-              <div className="mb-6">
-                {/* Job Types */}
-                {/* <div className="mb-6">
+            {/* Job Types, Salary, Schedule, Experience */}
+            <div className="mb-6">
+              {/* Job Types */}
+              {/* <div className="mb-6">
                   <b className="mb-1">Job Types: </b>
                   <p>________ Full-time, Regular / Permanent ________</p>
                 </div> */}
 
-                {/* Salary */}
-                <div className="mb-6">
-                  <b className="mb-1">Salary: </b>
-                  <p>
-                    ₹{job.salaryFrom} - ₹{job.salaryTo} per month
-                  </p>
-                </div>
+              {/* Salary */}
+              <div className="mb-6">
+                <b className="mb-1">Salary: </b>
+                <p>
+                  ${job.salaryFrom} - ${job.salaryTo} per month
+                </p>
+              </div>
 
-                {/* Schedule */}
-                {/* <div className="mb-6">
+              {/* Schedule */}
+              {/* <div className="mb-6">
                   <b>Schedule:</b>
                   <ul className="ml-2 px-2 mt-1 list-inside list-disc">
                     <li>________ Monday to Friday ________</li>
@@ -296,25 +344,25 @@ const JobView = () => {
                   </ul>
                 </div> */}
 
-                {/* Experience */}
-                <div className="mb-6">
-                  <b className="mb-1">Experience: </b>
-                  {/* <ul className="ml-2 px-2 pt-1 list-inside list-disc">
+              {/* Experience */}
+              <div className="mb-6">
+                <b className="mb-1">Experience: </b>
+                {/* <ul className="ml-2 px-2 pt-1 list-inside list-disc">
                 <li>iOS/Android Development: 5 years (Preferred)</li>
               </ul> */}
-                  <p>{job.experience} yrs</p>
-                </div>
+                <p>{job.experience}</p>
               </div>
-
-              <hr className="my-6 bg-neutral-300" />
             </div>
 
-            {/* 4rth Para - Hiring Insights */}
-            <div className="mb-6">
-              <h2 className="text-xl font-bold mb-1">Hiring Insights</h2>
+            <hr className="my-6 bg-neutral-300" />
+          </div>
 
-              {/* General Stats */}
-              {/* <div className="flex gap-1 flex-col mb-6">
+          {/* 4rth Para - Hiring Insights */}
+          <div className="mb-6">
+            <h2 className="text-xl font-bold mb-1">Hiring Insights</h2>
+
+            {/* General Stats */}
+            {/* <div className="flex gap-1 flex-col mb-6">
                 <div className="flex gap-2 m-0">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -370,29 +418,29 @@ const JobView = () => {
                 </p>
               </div> */}
 
-              {/* Job Activity */}
-              <div>
-                <b>Job activity</b>
-                <ul className="ml-2 mt-0 px-2 pt-1 list-inside list-disc">
-                  <li>
-                    Posted: <b>{job.jobPostDate}</b>
-                  </li>
-                  <li>
-                    Total Applications: <b>{appliedCandidates.length}</b>
-                  </li>
-                  <li>
-                    Posted by: <b>{job.postedBy.name}</b>
-                  </li>
-                </ul>
-              </div>
+            {/* Job Activity */}
+            <div>
+              <b>Job activity</b>
+              <ul className="ml-2 mt-0 px-2 pt-1 list-inside list-disc">
+                <li>
+                  Posted: <b>{job.jobPostDate}</b>
+                </li>
+                <li>
+                  Total Applications: <b>{appliedCandidates.length}</b>
+                </li>
+                <li>
+                  Posted by: <b>{job.postedBy.name}</b>
+                </li>
+              </ul>
             </div>
+          </div>
 
-            <hr className="my-6 bg-neutral-300" />
+          <hr className="my-6 bg-neutral-300" />
 
-            {/* 5th Para - Actions (Report, Apply, Like) */}
-            <div className="">
-              {/* Report Button */}
-              {/* <button className="transition w-40 py-2 mt-8 text-lg font-semibold text-black rounded-lg border-b-4 border-b-neutral-400 bg-neutral-200 hover:bg-neutral-300 active:translate-y-[0.125rem] active:border-b-neutral-300  flex justify-center  gap-1">
+          {/* 5th Para - Actions (Report, Apply, Like) */}
+          <div className="">
+            {/* Report Button */}
+            {/* <button className="transition w-40 py-2 mt-8 text-lg font-semibold text-black rounded-lg border-b-4 border-b-neutral-400 bg-neutral-200 hover:bg-neutral-300 active:translate-y-[0.125rem] active:border-b-neutral-300  flex justify-center  gap-1">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-7 w-7 mt-0.5"
@@ -410,29 +458,30 @@ const JobView = () => {
                 Report job
               </button> */}
 
-              {/* Apply Button */}
-              <div className="flex items-center gap-8 mt-8">
-                {job.postedBy.username === user_name ? (
-                  <button className="transition w-36 md:w-80 py-2 text-lg font-bold text-white rounded-lg border-b-4 border-b-blue-900 bg-blue-600 hover:bg-blue-700 active:translate-y-[0.125rem] active:border-b-blue-700 ">
-                    <Link to={`/jobs/edit/${job._id}`} className="text-white">
-                      Edit Now
-                    </Link>
-                  </button>
-                ) : alreadyApplied ? (
-                  <button className="text-white text-lg font-bold bg-green-600 rounded-full px-5 py-2 whitespace-nowrap shadow-lg border-b-green-900">
-                    Applied
-                  </button>
-                ) : (
-                  <button
-                    onClick={applyNowClick}
-                    className="transition w-36 md:w-80 py-2 text-lg font-bold text-white rounded-lg border-b-4 border-b-blue-900 bg-blue-600 hover:bg-blue-700 active:translate-y-[0.125rem] active:border-b-blue-700 "
-                  >
-                    Apply now
-                  </button>
-                )}
+            {/* Apply Button */}
+            <div className="flex items-center gap-8 mt-8">
+              {job.postedBy.username === user_name ? (
+                <button className="transition w-36 md:w-80 py-2 text-lg font-bold text-white rounded-lg border-b-4 border-b-blue-900 bg-blue-600 hover:bg-blue-700 active:translate-y-[0.125rem] active:border-b-blue-700 ">
+                  <Link to={`/jobs/edit/${job._id}`} className="text-white">
+                    Edit Now
+                  </Link>
+                </button>
+              ) : alreadyApplied ? (
+                <button className="text-white text-lg font-bold bg-green-600 rounded-full px-5 py-2 whitespace-nowrap shadow-lg border-b-green-900">
+                  Applied
+                </button>
+              ) : (
+                <button
+                  onClick={applyNowClick}
+                  id="applyNowButton"
+                  className=" transition w-36 md:w-80 py-2 text-lg font-bold text-white rounded-lg border-b-4 border-b-blue-900 bg-blue-600 hover:bg-blue-700 active:translate-y-[0.125rem] active:border-b-blue-700 "
+                >
+                  Apply now
+                </button>
+              )}
 
-                {/* Heart Button */}
-                {/* <button className="h-6 w-6 ">
+              {/* Heart Button */}
+              {/* <button className="h-6 w-6 ">
                   <svg
                     role="img"
                     aria-label="save-icon"
@@ -444,13 +493,13 @@ const JobView = () => {
                     </g>
                   </svg>
                 </button> */}
-              </div>
             </div>
+          </div>
 
-            <hr className="mt-10 mb-6" />
+          <hr className="mt-10 mb-6" />
 
-            {/* 6th Para - Related Links */}
-            {/* <div className="flex flex-col gap-3 text-black">
+          {/* 6th Para - Related Links */}
+          {/* <div className="flex flex-col gap-3 text-black">
               <a
                 className="hover:underline"
                 href="/jobs?from=vj&amp;q=Android+Developer&amp;l=Remote"
@@ -472,36 +521,25 @@ const JobView = () => {
                 ________ Android Developer salaries in Remote ________
               </a>
             </div> */}
-          </div>
+        </div>
 
-          {/* Right Div - Company Info */}
-          {/* <div className="hidden lg:block">
-            <div className="flex flex-col border-2 lg:w-80 xl:96"> */}
-          {/* Section Title */}
-          {/* <p className="font-semibold border-b-2 py-3 px-4 whitespace-nowrap">
-                Company Info
-              </p> */}
+        {/* Right Div - Company Info */}
+        <div className="hidden lg:block mt-16">
+          <div className="flex flex-col shadow-md hover:shadow-lg lg:w-80 xl:96 rounded-lg bg-white">
+            {/* Company Logo */}
+            <img
+              src={job.company_picture || dummyCompanyLogo}
+              alt="company_logo"
+              className="w-24 object-cover mx-auto -my-6 border-2 bg-white border-gray-300 rounded-lg mb-1 hover:scale-105 transition duration-500"
+            />
 
-          {/* Company Logo */}
-          {/* <img
-                src={job.company_image || companyLogo}
-                alt="company_logo"
-                className="w-24 object-cover mx-auto "
-              /> */}
+            {/* Link */}
+            <Link to="/company/2321213123" className="my-4 text-lg font-bold mx-auto">
+              {job.company_name}
+            </Link>
 
-          {/* Follow Button */}
-          {/* <button className="mx-auto w-2/5 py-2 px-4 mt-4 text-sm font-semibold text-black rounded-lg bg-neutral-200 hover:bg-neutral-300 active:border-b-neutral-300">
-                Follow
-              </button> */}
-
-          {/* <div className="p-4"> */}
-          {/* Link */}
-          {/* <Link to="/company/2321213123" className="mt-8 underline">
-                  {job.company_name}
-                </Link> */}
-
-          {/* Stars */}
-          {/* <div className="flex items-center my-3">
+        {/* Stars */}
+        {/* <div className="flex items-center my-3">
                   <div className="flex items-center mr-3">
                     <svg
                       className="mx-1 w-4 h-4 fill-current text-gray-500"
@@ -547,24 +585,26 @@ const JobView = () => {
                   <p className="m-0 whitespace-nowrap">14,000 reviews</p>
                 </div> */}
 
-          {/* Company Description - Small */}
-          {/* <p className="text-gray-500">
-                  {job.company_description
-                    ? job.company_description.length > 240
-                      ? job.company_description.slice(0, 240) + '...'
-                      : job.company_description
-                    : 'No Company Description'}
-                </p> */}
+      {/* Company Description - Small */}
+            <p className="text-gray-500  px-6">
+              {job.company_description
+                ? job.company_description.length > 240
+                  ? job.company_description.slice(0, 240) + '...'
+                  : job.company_description
+                : 'No Company Description'}
+            </p>
 
-          {/* <div>
-                  <p className="mb-2">Email: {job.company_email}</p>
-                  <p>Phone: {job.company_phone}</p>
-                </div> */}
-          {/* </div> */}
-          {/* </div> */}
-          {/* </div> */}
+            <div className="px-6 py-3 text-blue-600">
+              <a className="mb-2 block" href={`mailto:${job.company_email}`}>
+                Send an Email{' '}
+              </a>
+              <a className="mb-2 block" href={`tel:${job.company_phone}`}>
+                Talk on Phone{' '}
+              </a>
+            </div>
+          </div>
         </div>
-      </DefaultLayout>
+      </div>
     </div>
   );
 };

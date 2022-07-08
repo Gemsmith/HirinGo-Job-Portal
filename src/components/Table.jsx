@@ -1,5 +1,4 @@
-import axios from 'axios';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   useTable,
   useSortBy,
@@ -8,8 +7,6 @@ import {
   usePagination,
   useAsyncDebounce,
 } from 'react-table';
-import DefaultLayout from '../components/DefaultLayout';
-import { Link } from 'react-router-dom';
 import LoadingJobsLoader from '../components/LoadingJobsLoader';
 
 export const DefaultColumnFilter = ({ column }) => {
@@ -30,11 +27,7 @@ export const DefaultColumnFilter = ({ column }) => {
   );
 };
 
-function GlobalFilter({
-  preGlobalFilteredRows,
-  globalFilter,
-  setGlobalFilter,
-}) {
+function GlobalFilter({ preGlobalFilteredRows, globalFilter, setGlobalFilter }) {
   const count = preGlobalFilteredRows.length;
   const [value, setValue] = useState(globalFilter);
   const onChange = useAsyncDebounce((value) => {
@@ -49,7 +42,7 @@ function GlobalFilter({
           title="Search"
           className="p-1 focus:outline-none focus:ring"
         >
-          <svg fill="currentColor" viewBox="0 0 512 512" className="w-4 h-4">
+          <svg fill="currentColor" viewBox="0 0 512 512" className="w-4 h-4 opacity-50">
             <path d="M479.6,399.716l-81.084-81.084-62.368-25.767A175.014,175.014,0,0,0,368,192c0-97.047-78.953-176-176-176S16,94.953,16,192,94.953,368,192,368a175.034,175.034,0,0,0,101.619-32.377l25.7,62.2L400.4,478.911a56,56,0,1,0,79.2-79.195ZM48,192c0-79.4,64.6-144,144-144s144,64.6,144,144S271.4,336,192,336,48,271.4,48,192ZM456.971,456.284a24.028,24.028,0,0,1-33.942,0l-76.572-76.572-23.894-57.835L380.4,345.771l76.573,76.572A24.028,24.028,0,0,1,456.971,456.284Z"></path>
           </svg>
         </button>
@@ -61,8 +54,8 @@ function GlobalFilter({
           setValue(e.target.value);
           onChange(e.target.value);
         }}
-        placeholder={`Globally Search ${count} records...`}
-        className="w-auto py-2 px-10 border border-gray-400 text-sm rounded-md sm:w-auto focus:outline-none focus:border-blue-400 focus:ring-blue-300 focus:ring-opacity-40 focus:ring"
+        placeholder={`Globally Search (${count} records)`}
+        className="w-auto py-2 px-10 border-2 border-blue-200 text-sm rounded-md sm:w-auto focus:outline-none focus:border-blue-400 focus:ring-blue-300 focus:ring-opacity-40 focus:ring"
       />
     </div>
   );
@@ -85,7 +78,7 @@ function Pagination({
         <button
           onClick={() => gotoPage(0)}
           className="py-2 px-4 flex items-center
-                text-gray-600 bg-gray-200 hover:bg-gray-300 cursor-pointer
+                text-gray-600 bg-gray-200 hover:bg-gray-300 cursor-pointer transition 
                 rounded"
         >
           {' '}
@@ -93,7 +86,7 @@ function Pagination({
         </button>
         <button
           onClick={previousPage}
-          className="py-2 px-4 flex items-center  text-gray-600 bg-gray-200 hover:bg-gray-300 cursor-pointer rounded"
+          className="py-2 px-4 flex items-center  text-gray-600 bg-gray-200 hover:bg-gray-300  transition cursor-pointer rounded"
         >
           🠜
         </button>
@@ -113,7 +106,7 @@ function Pagination({
             type="number"
             name=""
             id=""
-            className="py-2 px-3 flex items-center text-gray-600 border bg-gray-100 hover:bg-gray-300 rounded"
+            className="py-2 px-3 flex items-center text-gray-600 border bg-gray-100 hover:bg-gray-300  transition rounded"
             min={1}
             max={pageCount}
             onChange={(e) => {
@@ -124,7 +117,7 @@ function Pagination({
         </div>
 
         <select
-          className="py-2 px-4 flex items-center text-gray-600 bg-gray-100 hover:bg-gray-300 cursor-pointer rounded"
+          className="py-2 px-4 flex items-center text-gray-600 bg-gray-100 hover:bg-gray-300  transition cursor-pointer rounded"
           value={pageSize}
           onChange={(e) => {
             setPageSize(+e.target.value);
@@ -139,12 +132,12 @@ function Pagination({
       </div>
       {/* Right Pagination */}
       <div onClick={nextPage} className="flex flex-nowrap gap-2 justify-end">
-        <button className="py-2 px-4 flex items-center text-gray-600 bg-gray-200 hover:bg-gray-300 cursor-pointer rounded">
+        <button className="py-2 px-4 flex items-center text-gray-600 bg-gray-200 hover:bg-gray-300 transition  cursor-pointer rounded">
           🠞
         </button>
         <button
           onClick={() => gotoPage(pageCount - 1)}
-          className="py-2 px-4 flex items-center text-gray-600 bg-gray-200 hover:bg-gray-300 cursor-pointer rounded"
+          className="py-2 px-4 flex items-center text-gray-600 bg-gray-200 hover:bg-gray-300  transition cursor-pointer rounded"
         >
           ⯮
         </button>
@@ -153,13 +146,10 @@ function Pagination({
   );
 }
 
-const Table = ({
-  columnsArrayProp,
-  dataArrayProp,
-  headingProp,
-  noDataMessageProp,
-}) => {
+const Table = ({ columnsArrayProp, dataArrayProp, headingProp, noDataMessageProp }) => {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const columns = useMemo(() => [...columnsArrayProp], []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const data = useMemo(() => [...dataArrayProp], [dataArrayProp]);
 
   const {
@@ -191,18 +181,14 @@ const Table = ({
   const isEven = (idx) => idx % 2 === 0;
 
   if (!dataArrayProp) {
-    return (
-      <DefaultLayout>
-        <LoadingJobsLoader />
-      </DefaultLayout>
-    );
+    return <LoadingJobsLoader />;
   }
 
   return (
-    <div className="w-full p-4">
+    <div className="w-full">
       <p
         tabIndex="0"
-        className="focus:outline-none text-lg sm:text-lg md:text-xl lg:text-2xl font-bold leading-normal text-gray-800"
+        className="focus:outline-none text-lg sm:text-lg md:text-xl lg:text-2xl font-bold leading-normal text-gray-800 mb-4"
       >
         {headingProp}
       </p>
@@ -220,21 +206,13 @@ const Table = ({
           <div className="mt-2 overflow-scroll xl:overflow-hidden shadow-lg  rounded-lg border-4 border-blue-200">
             <table {...getTableProps()} className="w-full ">
               <thead className="text-left rounded-lg w-auto uppercase text-gray-600 bg-blue-200 truncate">
-                {headerGroups.map((headerGroup) => (
-                  <tr {...headerGroup.getHeaderGroupProps()}>
-                    {headerGroup.headers.map((column) => (
-                      <th className="pl-3 py-2 text-sm font-semibold">
-                        <div
-                          {...column.getHeaderProps(
-                            column.getSortByToggleProps()
-                          )}
-                        >
+                {headerGroups.map((headerGroup, index1) => (
+                  <tr key={index1} {...headerGroup.getHeaderGroupProps()}>
+                    {headerGroup.headers.map((column, index2) => (
+                      <th key={index2} className="pl-3 py-2 text-sm font-semibold">
+                        <div {...column.getHeaderProps(column.getSortByToggleProps())}>
                           {column.render('Header')}
-                          {column.isSorted
-                            ? column.isSortedDesc
-                              ? ' ▼'
-                              : ' ▲'
-                            : ''}
+                          {column.isSorted ? (column.isSortedDesc ? ' ▼' : ' ▲') : ''}
                         </div>
                         <div className="">
                           {column.canFilter ? column.render('Filter') : null}
@@ -245,18 +223,19 @@ const Table = ({
                 ))}
               </thead>
               <tbody {...getTableBodyProps()}>
-                {page.map((row, idx) => {
+                {page.map((row, idx1) => {
                   prepareRow(row);
 
                   return (
                     <tr
+                      key={idx1}
                       {...row.getRowProps()}
                       className={` focus:outline-none h-20 lg:h-16 border-b border-gray-200
-                    ${isEven(idx) ? 'bg-blue-300/30' : ''}
+                    ${isEven(idx1) ? 'bg-blue-300/30' : ''}
                   `}
                     >
-                      {row.cells.map((cell, idx) => (
-                        <td className="pl-3" {...cell.getCellProps()}>
+                      {row.cells.map((cell, idx2) => (
+                        <td key={idx2} className="pl-3" {...cell.getCellProps()}>
                           {cell.render('Cell')}
                         </td>
                       ))}

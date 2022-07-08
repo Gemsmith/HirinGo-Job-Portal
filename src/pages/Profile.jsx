@@ -1,30 +1,72 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import TestComp from '../components/TestComp';
-import { DividerHorizontal, SpinnerLoader } from '../components';
-import DefaultLayout from '../components/DefaultLayout';
+import { SpinnerLoader } from '../components';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
-import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateUser } from '../redux/actions/userActions';
-import { toast, ToastContainer } from 'react-toastify';
-import { loaderReducer } from '../redux/reducers/loaderReducer';
+import { toast } from 'react-toastify';
+
+import { v4 } from 'uuid';
+import { storage } from '../firebase';
+import { ref, getDownloadURL, uploadBytesResumable } from 'firebase/storage';
 
 const PersonalInfoFormTemplate = ({
   register,
   handleSubmit,
   trigger,
   errors,
+  formValues,
   setFormValues,
+  loggedInUser,
 }) => {
   const onSubmit = (data) => {
+    data.profilePicLink = url;
     setFormValues(data);
+  };
+
+  const [pickedFile, setPickedFile] = useState(null);
+  const [url, setUrl] = useState('');
+  // const [progresspercent, setProgresspercent] = useState(0);
+
+  const fileChangeHandler = (event) => {
+    setPickedFile(event.target.files[0]);
+  };
+
+  const fileUploadHandler = (e) => {
+    e.preventDefault();
+    if (pickedFile === null) {
+      return alert('Please pick a file first');
+    }
+
+    const fileName = pickedFile.name + v4();
+
+    // Sending File to Firebase Storage
+    var storageRef = ref(storage, `/userProfilePics/${fileName}`);
+    const uploadTask = uploadBytesResumable(storageRef, pickedFile);
+
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        // const progress = Math.round(
+        //   (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+        // );
+        // setProgresspercent(progress);
+      },
+      (error) => {
+        alert(error);
+      },
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          setUrl(downloadURL);
+        });
+      }
+    );
   };
 
   return (
     <>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 p-4 bg-gray-200  rounded-md ">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 p-4 bg-blue-100  rounded-md ">
           <div className="relative">
             <label className="text-gray-700" htmlFor="firstName">
               First name
@@ -122,7 +164,7 @@ const PersonalInfoFormTemplate = ({
               id="mobileNumber"
               type="text"
               className=" w-full px-4 py-2 border border-gray-500 rounded-md focus:border-blue-400 focus:ring-blue-300 focus:ring-opacity-40 focus:outline-none focus:ring"
-              {...register('personal_info.mobileNumber', { required: true })}
+              {...register('personal_info.mobileNumber')}
             />
           </div>
 
@@ -160,12 +202,42 @@ const PersonalInfoFormTemplate = ({
               {...register('personal_info.address')}
             ></textarea>
           </div>
+
+          {/* Profile Image Pic */}
+          <div>
+            <label className="text-gray-700" htmlFor="user-image">
+              Profile Image
+            </label>
+
+            {/* Image Upload */}
+            <div className="w-full flex-col justify-center items-center gap-6 text-sm">
+              <input
+                type="file"
+                id="user-image"
+                className="bg-blue-100 px-4 py-3 rounded-md w-full sm:w-[65%]"
+                onChange={fileChangeHandler}
+              />
+
+              <button
+                className="bg-blue-600 text-gray-100 rounded-full px-6 py-2 w-fit font-bold"
+                onClick={fileUploadHandler}
+              >
+                Upload Image
+              </button>
+
+              <img
+                className="w-32 h-32 bg-blue-50 object-cover rounded-lg mt-5"
+                src={url || loggedInUser.profilePicLink}
+                alt="user_image"
+              />
+            </div>
+          </div>
         </div>
 
         <div className="flex justify-end mt-6">
           <button
             type="submit"
-            className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
+            className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
           >
             Save
           </button>
@@ -180,6 +252,7 @@ const SkillsFormTemplate = ({
   trigger,
   errors,
   control,
+  formValues,
   setFormValues,
 }) => {
   const { fields, append, remove } = useFieldArray({
@@ -196,13 +269,14 @@ const SkillsFormTemplate = ({
     if (fields.length === 0) {
       append({ skill: '', level: '' });
     }
+    // eslint-disable-next-line
   }, []);
 
   return (
     <>
       <form onSubmit={handleSubmit(onSubmit)}>
         <button
-          className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600 flex items-center"
+          className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600 flex items-center"
           type="button"
           onClick={() => append({ skill: '', level: '' })}
         >
@@ -226,12 +300,12 @@ const SkillsFormTemplate = ({
           return (
             <div
               key={field.id}
-              className="my-4 px-4 p-4 bg-gray-200 rounded-md flex flex-row items-end flex-wrap sm:flex-nowrap gap-3  "
+              className="my-4 px-4 p-4 bg-blue-100 rounded-md flex flex-row items-end flex-wrap sm:flex-nowrap gap-3  "
             >
               <div className="relative flex flex-col w-full">
                 <label className="text-gray-700" htmlFor={`skill-${index}`}>
                   Skill
-                  <span className="text-red-500 required-dot text-lg"> *</span>
+                  {/* <span className="text-red-500 required-dot text-lg"> *</span> */}
                 </label>
 
                 <Controller
@@ -255,9 +329,11 @@ const SkillsFormTemplate = ({
                   name={`skills.${index}.skill`}
                   control={control}
                   defaultValue={field.skill}
-                  rules={{
-                    required: 'Please enter a skill / delete this field',
-                  }}
+                  rules={
+                    {
+                      // required: 'Required',
+                    }
+                  }
                 />
                 {errors.skills?.[index]?.skill && (
                   <small className="absolute right-0 text-red-600">
@@ -269,7 +345,7 @@ const SkillsFormTemplate = ({
               <div className="relative flex flex-col">
                 <label className="text-gray-700" htmlFor={`level-${index}`}>
                   Level
-                  <span className="text-red-500 required-dot text-lg"> *</span>
+                  {/* <span className="text-red-500 required-dot text-lg"> *</span> */}
                 </label>
 
                 <Controller
@@ -300,7 +376,11 @@ const SkillsFormTemplate = ({
                   name={`skills.${index}.level`}
                   control={control}
                   defaultValue={field.level}
-                  rules={{ required: 'Required' }}
+                  rules={
+                    {
+                      //  required: 'Required'
+                    }
+                  }
                 />
                 {errors.skills?.[index]?.level && (
                   <small className="absolute right-0 text-red-600">
@@ -310,7 +390,7 @@ const SkillsFormTemplate = ({
               </div>
 
               <button
-                className="h-10 px-6 py-2 text-white transition-colors duration-200 transform bg-red-700 rounded-md hover:bg-red-600 focus:outline-none focus:bg-red-600"
+                className="h-10 px-6 py-2 text-white transition-colors duration-300 transform bg-red-700 rounded-md hover:bg-red-600 focus:outline-none focus:bg-red-600"
                 type="button"
                 onClick={() => remove(index)}
               >
@@ -334,7 +414,7 @@ const SkillsFormTemplate = ({
         <div className="flex justify-end mt-6">
           <button
             type="submit"
-            className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
+            className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
           >
             Save
           </button>
@@ -349,6 +429,7 @@ const ProjectsFormTemplate = ({
   trigger,
   errors,
   control,
+  formValues,
   setFormValues,
 }) => {
   const { fields, append, remove } = useFieldArray({
@@ -364,13 +445,14 @@ const ProjectsFormTemplate = ({
     if (fields.length === 0) {
       append({ name: '', repo_url: '', deployed_url: '', tech_stack: '' });
     }
+    // eslint-disable-next-line
   }, []);
 
   return (
     <>
       <form onSubmit={handleSubmit(onSubmit)}>
         <button
-          className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600 flex items-center"
+          className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600 flex items-center"
           type="button"
           onClick={() =>
             append({ name: '', repo_url: '', deployed_url: '', tech_stack: '' })
@@ -395,17 +477,14 @@ const ProjectsFormTemplate = ({
           return (
             <div
               key={field.id}
-              className="mt-4 mb-8 p-4 bg-gray-200  rounded-md flex flex-col md:flex-row gap-4 md:gap-0"
+              className="mt-4 mb-8 p-4 bg-blue-100  rounded-md flex flex-col md:flex-row gap-4 md:gap-0"
             >
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 grow sm:mr-3 gap-3 sm:mb-0 w-full">
                 {/* Project Name */}
                 <div className=" relative flex flex-col">
                   <label className="text-gray-700" htmlFor="project-name">
                     Project Name
-                    <span className="text-red-500 required-dot text-lg">
-                      {' '}
-                      *
-                    </span>
+                    {/* <span className="text-red-500 required-dot text-lg"> *</span> */}
                   </label>
                   <Controller
                     render={({ field }) => (
@@ -425,7 +504,11 @@ const ProjectsFormTemplate = ({
                     name={`projects.${index}.name`}
                     control={control}
                     defaultValue={field.name}
-                    rules={{ required: 'Project name is required' }}
+                    rules={
+                      {
+                        // required: 'Project name is required'
+                      }
+                    }
                   />
                   {errors.projects?.[index]?.name && (
                     <small className="absolute right-0 text-red-600">
@@ -497,7 +580,7 @@ const ProjectsFormTemplate = ({
               </div>
 
               <button
-                className="lg:h-10 lg:self-end px-6 py-2 text-white transition-colors duration-200 transform bg-red-700 rounded-md hover:bg-red-600 focus:outline-none focus:bg-red-600"
+                className="lg:h-10 lg:self-end px-6 py-2 text-white transition-colors duration-300 transform bg-red-700 rounded-md hover:bg-red-600 focus:outline-none focus:bg-red-600"
                 type="button"
                 onClick={() => remove(index)}
               >
@@ -521,7 +604,7 @@ const ProjectsFormTemplate = ({
         <div className="flex justify-end mt-6">
           <button
             type="submit"
-            className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
+            className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
           >
             Save
           </button>
@@ -536,6 +619,7 @@ const EducationFormTemplate = ({
   trigger,
   errors,
   control,
+  formValues,
   setFormValues,
 }) => {
   const { fields, append, remove } = useFieldArray({
@@ -561,12 +645,13 @@ const EducationFormTemplate = ({
         },
       });
     }
+    // eslint-disable-next-line
   }, []);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <button
-        className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600 flex items-center"
+        className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600 flex items-center"
         type="button"
         onClick={() =>
           append({
@@ -601,21 +686,15 @@ const EducationFormTemplate = ({
         return (
           <div
             key={field.id}
-            className="mt-4 mb-10 p-4 flex gap-3 flex-col md:flex-row bg-gray-200  rounded-md"
+            className="mt-4 mb-10 p-4 flex gap-3 flex-col md:flex-row bg-blue-100  rounded-md"
           >
             <div className="flex flex-col gap-6 grow">
               <div className="flex flex-col md:flex-row gap-4 grow">
                 {/* Title */}
                 <div className="relative flex flex-col grow">
-                  <label
-                    className="text-gray-700 truncate"
-                    htmlFor={`title-${index}`}
-                  >
+                  <label className="text-gray-700 truncate" htmlFor={`title-${index}`}>
                     Education Title
-                    <span className="text-red-500 required-dot text-lg">
-                      {' '}
-                      *
-                    </span>
+                    {/* <span className="text-red-500 required-dot text-lg"> *</span> */}
                   </label>
 
                   <Controller
@@ -637,7 +716,11 @@ const EducationFormTemplate = ({
                     name={`education.${index}.title`}
                     control={control}
                     defaultValue={field.title}
-                    rules={{ required: 'Title is required' }}
+                    rules={
+                      {
+                        // required: 'Title is required'
+                      }
+                    }
                   />
                   {errors.education?.[index]?.title && (
                     <small className="absolute right-0 text-red-600">
@@ -653,10 +736,7 @@ const EducationFormTemplate = ({
                     htmlFor={`institute-${index}`}
                   >
                     College/Institute Name
-                    <span className="text-red-500 required-dot text-lg">
-                      {' '}
-                      *
-                    </span>
+                    {/* <span className="text-red-500 required-dot text-lg"> *</span> */}
                   </label>
 
                   <Controller
@@ -678,7 +758,11 @@ const EducationFormTemplate = ({
                     name={`education.${index}.institute`}
                     control={control}
                     defaultValue={field.institute}
-                    rules={{ required: 'College/Institute Name is required' }}
+                    rules={
+                      {
+                        // required: 'College/Institute Name is required'
+                      }
+                    }
                   />
                   {errors.education?.[index]?.institute && (
                     <small className="absolute right-0 text-red-600">
@@ -715,10 +799,7 @@ const EducationFormTemplate = ({
 
                 {/* Year From */}
                 <div className="flex flex-col w-32">
-                  <label
-                    className="text-gray-700"
-                    htmlFor={`year-from-${index}`}
-                  >
+                  <label className="text-gray-700" htmlFor={`year-from-${index}`}>
                     From Year
                   </label>
 
@@ -762,15 +843,9 @@ const EducationFormTemplate = ({
 
                 {/* Scoring: Type */}
                 <div className="relative flex flex-col w-48">
-                  <label
-                    className="text-gray-700"
-                    htmlFor={`ranking-system-${index}`}
-                  >
+                  <label className="text-gray-700" htmlFor={`ranking-system-${index}`}>
                     Scoring Type
-                    <span className="text-red-500 required-dot text-lg">
-                      {' '}
-                      *
-                    </span>
+                    {/* <span className="text-red-500 required-dot text-lg"> *</span> */}
                   </label>
 
                   <Controller
@@ -796,7 +871,11 @@ const EducationFormTemplate = ({
                     name={`education.${index}.scoring.type`}
                     control={control}
                     defaultValue={field.scoring?.type}
-                    rules={{ required: 'Required' }}
+                    rules={
+                      {
+                        // required: 'Required'
+                      }
+                    }
                   />
                   {errors.education?.[index]?.scoring?.type && (
                     <small className="absolute right-0 text-red-600">
@@ -809,10 +888,7 @@ const EducationFormTemplate = ({
                 <div className="relative flex flex-col w-48">
                   <label className="text-gray-700" htmlFor={`score-${index}`}>
                     Score
-                    <span className="text-red-500 required-dot text-lg">
-                      {' '}
-                      *
-                    </span>
+                    {/* <span className="text-red-500 required-dot text-lg"> *</span> */}
                   </label>
 
                   <Controller
@@ -834,7 +910,11 @@ const EducationFormTemplate = ({
                     name={`education.${index}.scoring.score`}
                     control={control}
                     defaultValue={field.scoring?.score}
-                    rules={{ required: 'Score is required' }}
+                    rules={
+                      {
+                        // required: 'Score is required'
+                      }
+                    }
                   />
                   {errors.education?.[index]?.scoring?.score && (
                     <small className="absolute right-0 text-red-600">
@@ -846,7 +926,7 @@ const EducationFormTemplate = ({
             </div>
 
             <button
-              className="self-end px-6 py-2 text-white transition-colors duration-200 transform bg-red-700 rounded-md hover:bg-red-600 focus:outline-none focus:bg-red-600 w-full md:w-auto h-12 md:h-32"
+              className="self-end px-6 py-2 text-white transition-colors duration-300 transform bg-red-700 rounded-md hover:bg-red-600 focus:outline-none focus:bg-red-600 w-full md:w-auto h-12 md:h-32"
               type="button"
               onClick={() => remove(index)}
             >
@@ -870,7 +950,7 @@ const EducationFormTemplate = ({
       <div className="flex justify-end mt-6">
         <button
           type="submit"
-          className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
+          className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600"
         >
           Save
         </button>
@@ -884,6 +964,7 @@ const ExperienceFormTemplate = ({
   trigger,
   errors,
   control,
+  formValues,
   setFormValues,
 }) => {
   const { fields, append, remove } = useFieldArray({
@@ -905,12 +986,13 @@ const ExperienceFormTemplate = ({
         description: '',
       });
     }
+    // eslint-disable-next-line
   }, []);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <button
-        className="px-6 py-2 text-white transition-colors duration-200 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600 flex items-center"
+        className="px-6 py-2 text-white transition-colors duration-300 transform bg-green-700 rounded-md hover:bg-green-600 focus:outline-none focus:bg-green-600 flex items-center"
         type="button"
         onClick={() =>
           append({
@@ -941,22 +1023,16 @@ const ExperienceFormTemplate = ({
         return (
           <div
             key={field.id}
-            className="mt-4 py-4 px-4 flex flex-col md:flex-row gap-3 bg-gray-200  rounded-md"
+            className="mt-4 py-4 px-4 flex flex-col md:flex-row gap-3 bg-blue-100  rounded-md"
           >
             {/* Title, Designation, Date from, Date to */}
             <div className="flex flex-col grow gap-6">
               <div className="flex gap-3 flex-col sm:flex-row">
                 {/* Designation */}
                 <div className="relative flex flex-col grow">
-                  <label
-                    className="text-gray-700"
-                    htmlFor={`designation-${index}`}
-                  >
+                  <label className="text-gray-700" htmlFor={`designation-${index}`}>
                     Designation
-                    <span className="text-red-500 required-dot text-lg">
-                      {' '}
-                      *
-                    </span>
+                    {/* <span className="text-red-500 required-dot text-lg"> *</span> */}
                   </label>
 
                   <Controller
@@ -978,7 +1054,11 @@ const ExperienceFormTemplate = ({
                     name={`experience.${index}.designation`}
                     control={control}
                     defaultValue={field.designation}
-                    rules={{ required: 'Designation is required' }}
+                    rules={
+                      {
+                        // required: 'Designation is required'
+                      }
+                    }
                   />
                   {errors.experience?.[index]?.designation && (
                     <small className="absolute right-0 text-red-600">
@@ -989,15 +1069,9 @@ const ExperienceFormTemplate = ({
 
                 {/* Year From */}
                 <div className="relative flex flex-col">
-                  <label
-                    className="text-gray-700"
-                    htmlFor={`date_from-${index}`}
-                  >
+                  <label className="text-gray-700" htmlFor={`date_from-${index}`}>
                     From Date
-                    <span className="text-red-500 required-dot text-lg">
-                      {' '}
-                      *
-                    </span>
+                    {/* <span className="text-red-500 required-dot text-lg"> *</span> */}
                   </label>
 
                   <Controller
@@ -1019,7 +1093,11 @@ const ExperienceFormTemplate = ({
                     name={`experience.${index}.date_from`}
                     control={control}
                     defaultValue={field.date_from}
-                    rules={{ required: 'Required' }}
+                    rules={
+                      {
+                        // required: 'Required'
+                      }
+                    }
                   />
                   {errors.experience?.[index]?.date_from && (
                     <small className="absolute right-0 text-red-600">
@@ -1034,10 +1112,7 @@ const ExperienceFormTemplate = ({
                 <div className="relative flex flex-col grow">
                   <label className="text-gray-700" htmlFor={`company-${index}`}>
                     Company Name
-                    <span className="text-red-500 required-dot text-lg">
-                      {' '}
-                      *
-                    </span>
+                    {/* <span className="text-red-500 required-dot text-lg"> *</span> */}
                   </label>
 
                   <Controller
@@ -1059,7 +1134,11 @@ const ExperienceFormTemplate = ({
                     name={`experience.${index}.company`}
                     control={control}
                     defaultValue={field.company}
-                    rules={{ required: 'Company name is required' }}
+                    rules={
+                      {
+                        // required: 'Company name is required'
+                      }
+                    }
                   />
                   {errors.experience?.[index]?.company && (
                     <small className="absolute right-0 text-red-600">
@@ -1070,15 +1149,9 @@ const ExperienceFormTemplate = ({
 
                 {/* Year To */}
                 <div className="relative flex flex-col ">
-                  <label
-                    className="text-gray-700"
-                    htmlFor={`date_till-${index}`}
-                  >
+                  <label className="text-gray-700" htmlFor={`date_till-${index}`}>
                     To Date
-                    <span className="text-red-500 required-dot text-lg">
-                      {' '}
-                      *
-                    </span>
+                    {/* <span className="text-red-500 required-dot text-lg"> *</span> */}
                   </label>
 
                   <Controller
@@ -1100,7 +1173,11 @@ const ExperienceFormTemplate = ({
                     name={`experience.${index}.date_till`}
                     control={control}
                     defaultValue={field.date_till}
-                    rules={{ required: 'Required' }}
+                    rules={
+                      {
+                        // required: 'Required'
+                      }
+                    }
                   />
                   {errors.experience?.[index]?.date_till && (
                     <small className="absolute right-0 text-red-600">
@@ -1115,10 +1192,7 @@ const ExperienceFormTemplate = ({
             <div className="flex gap-3 grow flex-col md:flex-row">
               {/* Work Details/Description */}
               <div className="flex flex-col grow">
-                <label
-                  className="text-gray-700"
-                  htmlFor={`description-${index}`}
-                >
+                <label className="text-gray-700" htmlFor={`description-${index}`}>
                   Work Details/Description
                 </label>
 
@@ -1173,13 +1247,9 @@ const ExperienceFormTemplate = ({
 };
 
 const Profile = () => {
-  const tabs = [
-    'Personal Info',
-    'Skills',
-    'Projects',
-    'Education',
-    'Experience',
-  ];
+  const loggedInUser = JSON.parse(localStorage.getItem('user'));
+
+  const tabs = ['Personal Info', 'Skills', 'Projects', 'Education', 'Experience'];
 
   const [activeTab, setActiveTab] = useState(1);
   const [formValues, setFormValues] = useState();
@@ -1212,9 +1282,7 @@ const Profile = () => {
 
   const onSubmitAllButtonClick = () => {
     if (!formValues) {
-      toast(
-        'Please click the "Save" button to save the data before submitting!'
-      );
+      toast('Please click the "Save" button to save the data before submitting!');
     }
 
     try {
@@ -1225,7 +1293,7 @@ const Profile = () => {
 
       dispatch(updateUser(allFormsData));
     } catch (error) {
-      toast('Error occured while submitting all forms data');
+      toast('Error occured! Have you filled all the tabs?');
     }
   };
 
@@ -1233,28 +1301,29 @@ const Profile = () => {
     // Fetching all data for the user from the local storage
     const userData = JSON.parse(localStorage.getItem('user'));
 
-    // We need to create a structure similar to what the form looks like
-    const personal_info = {
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      email: userData.email,
-      mobileNumber: userData.mobileNumber,
-      portfolio: userData.portfolio,
-      about: userData.about,
-      address: userData.address,
-    };
-    const { education, experience, projects, skills } = userData;
+    // We need to create a structure similar to what the form looks like, so creating a personal_info object. And destructuring the rest from userData.
+    if (userData) {
+      const personal_info = {
+        firstName: userData?.firstName,
+        lastName: userData?.lastName,
+        email: userData?.email,
+        mobileNumber: userData?.mobileNumber,
+        portfolio: userData?.portfolio,
+        about: userData?.about,
+        address: userData?.address,
+      };
+      const { education, experience, projects, skills } = userData;
+      // And this is what we need to pass in the reset method to repopulate the form with
+      const userDataForFormPrepopulation = {
+        personal_info,
+        education,
+        experience,
+        projects,
+        skills,
+      };
 
-    // And this is what we need to pass in the reset method to repopulate the form with
-    const userDataForFormPrepopulation = {
-      personal_info,
-      education,
-      experience,
-      projects,
-      skills,
-    };
-
-    reset(userDataForFormPrepopulation);
+      reset(userDataForFormPrepopulation);
+    }
   };
 
   useEffect(() => {
@@ -1266,26 +1335,34 @@ const Profile = () => {
     // Actual Data prepopulation when page loads and on each refresh
     // Either with empty values or the values from fetched user data
     resetForm();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <>
-      <DefaultLayout>
-        <div className="container p-4">
+      {loggedInUser ? (
+        // <div className="container p-8 ">
+        <div className="p-4 md:p-8 ">
           <p
             tabIndex="0"
-            className="focus:outline-none text-lg sm:text-lg md:text-xl lg:text-2xl font-bold leading-normal text-gray-800"
+            className="focus:outline-none text-lg sm:text-lg md:text-xl lg:text-2xl font-bold leading-normal text-gray-800 mb-5"
           >
-            Profile View/Update
+            Profile Update{' '}
+            <Link
+              to={`/user/view/${loggedInUser?._id}`}
+              className="text-blue-600 text-base block"
+            >
+              Click here to View Profile
+            </Link>
           </p>
 
-          <div className="pb-4 ">
+          <div className="pb-4 rounded-lg overflow-scroll">
             {/* Tabs Container */}
-            <ul className="nav nav-tabs flex flex-row flex-nowrap justify-start overflow-auto list-none mb-0">
+            <ul className="nav w-[86vw] md:w-full  flex flex-row flex-nowrap justify-start overflow-auto no-scrollbar list-none mb-0">
               {tabs.map((tab, index) => (
                 <li className="nav-item" key={index}>
                   <button
-                    className={`inline-block nav-link px-4 py-2 border-b-2 whitespace-nowrap  ${
+                    className={`inline-block nav-link px-4 py-2 border-b-2 whitespace-nowrap   transition  ${
                       activeTab === index + 1
                         ? `border-blue-600 text-blue-600 bg-blue-500/10 rounded-t`
                         : 'hover:border-gray-400 hover:bg-gray-100'
@@ -1299,7 +1376,7 @@ const Profile = () => {
             </ul>
 
             {/* Corresponding Tab's Content */}
-            <div className="px-3 py-3 mx-auto">
+            <div className=" py-3 mx-auto">
               {/* Tab 1 */}
               {activeTab === 1 && (
                 <PersonalInfoFormTemplate
@@ -1308,7 +1385,9 @@ const Profile = () => {
                     handleSubmit,
                     trigger,
                     errors,
+                    formValues,
                     setFormValues,
+                    loggedInUser,
                   }}
                 />
               )}
@@ -1406,7 +1485,13 @@ const Profile = () => {
             </div>
           </div>
         </div>
-      </DefaultLayout>
+      ) : (
+        <>
+          <p className="text-base pl-5 pt-5 ">
+            Please <Link to="/login">Login</Link> to view or update your <b>Profile</b>
+          </p>
+        </>
+      )}
     </>
   );
 };

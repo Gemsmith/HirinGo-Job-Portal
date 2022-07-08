@@ -1,20 +1,26 @@
-import axios from 'axios';
-import React, { useEffect, useMemo, useState } from 'react';
-import DefaultLayout from '../components/DefaultLayout';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import LoadingJobsLoader from '../components/LoadingJobsLoader';
 import Modal from '../components/Modal';
 import Table, { DefaultColumnFilter } from '../components/Table';
-import { storeCurrentJobsAppliedUsers } from '../redux/actions/jobActions';
-import { useDispatch } from 'react-redux';
+import {
+  removeJob,
+  getUsersPostedJobs,
+  getAppliedUsers,
+} from '../redux/actions/jobActions';
+import { useDispatch, useSelector } from 'react-redux';
 
-function PostedJobs(props) {
+function PostedJobs() {
   const loggedInUser = JSON.parse(localStorage.getItem('user'));
-  const username = loggedInUser.username;
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [postedJobs, setPostedJobs] = useState([]);
-  const [appliedUsers, setAppliedUsers] = useState([]);
 
+  const usersPostedJobs = useSelector((state) => state.jobsReducer?.usersPostedJobs);
+
+  const username = loggedInUser?.username;
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [jobId, setJobId] = useState('');
+  // console.log('appliedUsersWithDate', appliedUsersWithDate);
+
+  const appliedUsers = useSelector((state) => state.jobsReducer?.appliedUsers);
   const dispatch = useDispatch();
 
   // This column Array is for this Components "Posted Jobs" Table
@@ -24,9 +30,7 @@ function PostedJobs(props) {
       accessor: 'title',
       Filter: DefaultColumnFilter,
       Cell: ({ row }) => {
-        return (
-          <span className="font-medium text-gray-700">{row.values.title}</span>
-        );
+        return <span className="font-medium text-gray-700">{row.values.title}</span>;
       },
     },
     {
@@ -55,9 +59,7 @@ function PostedJobs(props) {
       accessor: 'appliedCandidates',
       Filter: '',
       Cell: ({ row }) => {
-        return (
-          <p className=" my-0 p-0">{row.values.appliedCandidates.length}</p>
-        );
+        return <p className=" my-0 p-0">{row.values.appliedCandidates.length}</p>;
       },
     },
     {
@@ -107,6 +109,7 @@ function PostedJobs(props) {
               {/* List */}
               <button
                 onClick={() => {
+                  setJobId(row.original._id);
                   fetchAppliedUsers(row.original._id);
                   setIsModalVisible(!isModalVisible);
                   // In the applied candidates table (opens on clicking the list icon in any jobs' row), we need to keep the clicked job in a state var,
@@ -138,7 +141,7 @@ function PostedJobs(props) {
 
               {/* Delete */}
 
-              <button onClick={() => fetchAppliedUsers(row.original._id)}>
+              <button onClick={() => deleteJob(row.original._id)}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5"
@@ -166,11 +169,7 @@ function PostedJobs(props) {
       accessor: 'firstName',
       Filter: DefaultColumnFilter,
       Cell: ({ row }) => {
-        return (
-          <span className="font-bold text-gray-700">
-            {row.values.firstName}
-          </span>
-        );
+        return <span className="font-bold text-gray-700">{row.values.firstName}</span>;
       },
     },
     {
@@ -178,9 +177,7 @@ function PostedJobs(props) {
       accessor: 'lastName',
       Filter: DefaultColumnFilter,
       Cell: ({ row }) => {
-        return (
-          <span className="font-bold text-gray-700">{row.values.lastName}</span>
-        );
+        return <span className="font-bold text-gray-700">{row.values.lastName}</span>;
       },
     },
     {
@@ -194,7 +191,7 @@ function PostedJobs(props) {
       Filter: DefaultColumnFilter,
       Cell: ({ row }) => {
         return (
-          <Link to={`/user/view/${row.original._id}`}>
+          <Link to={`/user/view/${row.original._id}`} className="text-blue-600">
             {' '}
             {row.values.username}
           </Link>
@@ -210,109 +207,149 @@ function PostedJobs(props) {
       Header: 'Apply Date',
       accessor: 'applyDate',
       Filter: DefaultColumnFilter,
+      Cell: ({ row }) => {
+        const applyDate = row.original.appliedJobs?.find(
+          (job) => job.jobId === jobId
+        )?.applyDate;
+        const applyDateFormatted = new Date(applyDate).toLocaleString('en-GB', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        });
+        return applyDateFormatted;
+      },
     },
   ];
 
   const fetchAppliedUsers = async (jobId) => {
-    // Thing is sometimes the 1st method fails when the component loads before the data is fetched. So 2nd method is a better one.
-    // 1st way: Since the user has postedJobs and is trying to see who have applied to his jobs. Those users are stored in each job's
-    // "appliedCandidates" object. Thus accessing appliedCandidates in postedJobs array, will give list of users who have applied to this job.
-    // const job = postedJobs.find((job) => job._id === jobId);
-    // console.log(job);
-    // setAppliedUsers(job.appliedCandidates);
+    dispatch(getAppliedUsers(jobId));
 
-    // 2nd way: Send a request to the DB and query each User in thier User.appliedJobs array and see if the jobId matches. If it does, then
-    // the this user has applied to this jobId that was sent to the BE.
-    const response = await axios.post('/api/jobs/getappliedusers', {
-      jobId: jobId,
-    });
+    // const newUsersArrayWithDate = appliedUsers.map((user) => {
+    //   const applyDate = user.appliedJobs?.find((job) => job.jobId === jobId)?.applyDate;
+    //   const applyDateFormatted = new Date(applyDate).toLocaleString('en-GB', {
+    //     day: 'numeric',
+    //     month: 'short',
+    //     year: 'numeric',
+    //   });
+    //   user.applyDate = applyDateFormatted;
+    //   return user;
+    // });
 
-    // Was trying to transform the userObjects inside the  array to be passed into columnProp, but transforming it into a new array
-    // here, was just not working. It rendered the 1st row and then next rows would be empty.
-    // So had to take that whole logic and created a new array in the Be, from there we receive it here and then the table renders all rows
-    // correctly. NO IDEA WHY IT WAS NOT WORING when we were doing this (created new array here in the FE):
-    //     setAppliedUsers(appliedUsersArray);
-    // and worked when we the same data came from the BE:
-    //     setAppliedUsers(response.data.appliedUsersArray);
+    // appliedUsers.forEach((user) => {
+    //   const applyDate = user.appliedJobs?.find((job) => job.jobId === jobId)?.applyDate;
 
-    let appliedUsersArray = [];
-    response.data.users.forEach((user) => {
-      const applyDate = user.appliedJobs.find(
-        (job) => job.jobId === jobId
-      ).applyDate;
+    //   const applyDateFormatted = new Date(applyDate).toLocaleString('en-GB', {
+    //     day: 'numeric',
+    //     month: 'short',
+    //     year: 'numeric',
+    //   });
+    //   user.applyDate = applyDateFormatted;
 
-      const applyDateFormatted = new Date(applyDate).toLocaleString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      });
+    //   appliedUsersArray.push(user);
+    // });
+    // setAppliedUsersWithDate(appliedUsersArray);
+  };
 
-      user.applyDate = applyDateFormatted;
+  const deleteJob = async (jobId) => {
+    // const response = await axios.post(
+    //   '/api/jobs/deletejob',
+    //   {
+    //     jobId: jobId,
+    //   },
+    //   {
+    //     headers: { 'x-access-token': loggedInUser.jwtToken },
+    //   }
+    // );
 
-      appliedUsersArray.push(user);
-    });
-    // console.log('appliedUsersArraysdasdsads', appliedUsersArray);
+    // if (response.data.status === 'success') {
+    //   toast('Job Deleted Successfully');
+    // fetchPostedJobs();
+    // }
+    dispatch(removeJob(jobId));
+    fetchPostedJobs();
+  };
 
-    setAppliedUsers(appliedUsersArray);
+  const fetchPostedJobs = async () => {
+    // try {
+    //   const response = await axios.post(
+    //     'api/jobs/getpostedjobs',
+    //     { username },
+    //     { headers: { 'x-access-token': loggedInUser.jwtToken } }
+    //   );
+    //   if (response) {
+    //     const postedJobsArr = response.data.jobs;
+    //     setPostedJobs(postedJobsArr);
+    //   }
+    // } catch (error) {
+    //   console.log(error);
+    //   toast(error);
+    // }
+    dispatch(getUsersPostedJobs(username)); // saves usersPostedJobs in the redux store, which we'll fetch in this component.
   };
 
   useEffect(() => {
-    const fetchPostedJobs = async () => {
-      const response = await axios.post('api/jobs/getpostedjobs', { username });
-      if (response) {
-        const postedJobsArr = response.data.jobs;
-        setPostedJobs(postedJobsArr);
-      }
-    };
-
     fetchPostedJobs();
 
-    // We can send this dispatch right here itself. No need to look for some button click or anything. And also since in here
-    // when appliedUsers is logged, it always has the data, because the component has been re-rendered (as appliedUsers is a dependency)
-    // So appliedUsers is fetched only on the click of a job row's buttons. Thus we can send this dispatch here.
-    dispatch(storeCurrentJobsAppliedUsers(appliedUsers));
+    // We need these appliedUsers in UserView comp. In this component we can click on a job row and then we can select to view
+    // the profile of any person who has applied to this job. But to do that, we'll 1st go to userview comp, and need to find the
+    // selected user from inside the appliedUsers array.
+    //  So since applied users are being updated in this comp., we can just create a redux state for them via
+    // sending this dispatch right here itself. And also since in here when appliedUsers is console logged, it always has the data,
+    // because the component has been re-rendered (as appliedUsers is a dependency)
+    // Thus we can send this dispatch here.
+    // dispatch(storeCurrentJobsAppliedUsers(appliedUsers));
 
-    console.log('appliedUsers', appliedUsers);
+    // console.log('appliedUsers', appliedUsers);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appliedUsers]);
 
-  if (!postedJobs) {
-    return (
-      <DefaultLayout>
-        <LoadingJobsLoader />
-      </DefaultLayout>
-    );
+  if (!usersPostedJobs) {
+    return <LoadingJobsLoader />;
   }
 
   return (
     <>
-      <DefaultLayout>
-        <div className="relative">
-          {isModalVisible && (
-            <Modal
-              {...{
-                setIsModalVisible,
-                hideModalTitle: true,
-                modalTitle: 'Applied Users',
-                modalContent: (
-                  <Table
-                    columnsArrayProp={appliedUsersColumns}
-                    dataArrayProp={appliedUsers}
-                    headingProp={`Applied Users`}
-                    noDataMessageProp={'No users have applied to this job yet'}
-                  />
-                ),
-              }}
-            />
-          )}
-        </div>
+      <div className="p-4 md:p-8 overflow-hidden w-screen">
+        {loggedInUser ? (
+          <>
+            {/* Modal Overlay Hidden Table - Applicants Table */}
+            <div className="relative">
+              {isModalVisible && (
+                <Modal
+                  {...{
+                    setIsModalVisible,
+                    hideModalTitle: true,
+                    modalTitle: 'Applied Users',
+                    modalContent: (
+                      <Table
+                        columnsArrayProp={appliedUsersColumns}
+                        dataArrayProp={appliedUsers}
+                        headingProp={`Applied Users`}
+                        noDataMessageProp={'No users have applied to this job yet'}
+                      />
+                    ),
+                  }}
+                />
+              )}
+            </div>
 
-        <Table
-          columnsArrayProp={columns}
-          dataArrayProp={postedJobs}
-          headingProp={`Posted Jobs`}
-          noDataMessageProp={'No have not posted any jobs yet'}
-        />
-      </DefaultLayout>
+            {/* Main Table - Posted Jobs */}
+            <Table
+              columnsArrayProp={columns}
+              dataArrayProp={usersPostedJobs}
+              headingProp={`Posted Jobs`}
+              noDataMessageProp={'No have not posted any jobs yet'}
+            />
+          </>
+        ) : (
+          <>
+            <p className="text-base pl-5 pt-5 ">
+              Please <Link to="/login">Login</Link> to view or update your{' '}
+              <b>Posted Job Listings.</b>
+            </p>
+          </>
+        )}
+      </div>
     </>
   );
 }
